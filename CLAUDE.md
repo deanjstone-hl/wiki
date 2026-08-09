@@ -35,8 +35,8 @@ When working in this package, read the OpenWiki quickstart first, then follow it
 
 ## OpenWiki
 
-This package uses OpenWiki for recurring code documentation, scoped to `packages/wiki/` within the argus-context monorepo. Start with `openwiki/quickstart.md`, then follow its links to architecture, workflows, domain concepts, operations, integrations, testing guidance, and source maps.
+This repository uses OpenWiki for recurring code documentation. Start with `openwiki/quickstart.md`, then follow its links to architecture, workflows, domain concepts, operations, integrations, testing guidance, and source maps.
 
-The scheduled `.github/workflows/wiki-openwiki-update.yml` workflow (repo root, path-filtered to this package) refreshes this package's wiki. Do not hand-edit generated OpenWiki pages unless explicitly asked; prefer updating source code/docs and letting OpenWiki regenerate.
+The scheduled OpenWiki GitHub Actions workflow refreshes the repository wiki. Do not hand-edit generated OpenWiki pages unless explicitly asked; prefer updating source code/docs and letting OpenWiki regenerate.
 
 <!-- OPENWIKI:END -->

@@ -200,9 +200,9 @@ The repository includes `examples/openwiki-update.yml` as a copyable GitHub Acti
 - opens a pull request with `peter-evans/create-pull-request` scoped to the `openwiki` directory, `AGENTS.md`, `CLAUDE.md`, and the workflow file itself, with the classification and reason in the PR body,
 - auto-merges the PR (`gh pr merge --auto --squash`) only when the classification is routine.
 
-The classification step treats a change as **structural** — left for manual review — when it touches the workflow file itself, adds new file(s) under `openwiki/`, adds a new `##`/`###` heading, or changes a markdown link; everything else (prose-only edits to existing pages) is **routine** and auto-merges. The workflow file is force-classified structural unconditionally, so a change to the automation itself can never be silently auto-merged even though it stays in `add-paths` to support first-time setup. This repository's own `.github/workflows/openwiki-update.yml` runs the identical classify/auto-merge logic against a self-hosted runner and the `claude-cli` provider instead of `openrouter`.
+The classification step treats a change as **structural** — left for manual review — when it touches the workflow file itself, adds new file(s) under `openwiki/`, adds a new `##`/`###` heading, or changes a markdown link; everything else (prose-only edits to existing pages) is **routine** and auto-merges. The workflow file is force-classified structural unconditionally, so a change to the automation itself can never be silently auto-merged even though it stays in `add-paths` to support first-time setup. This package's own scheduled workflow, `.github/workflows/wiki-openwiki-update.yml`, lives at the monorepo root (not inside this package) and sets `working-directory: apps/wiki`; it runs the identical classify/auto-merge logic against a self-hosted runner and the `claude-cli` provider instead of `openrouter`, and scopes its `add-paths` to `apps/wiki/openwiki`, `apps/wiki/AGENTS.md`, `apps/wiki/CLAUDE.md`, and the workflow file itself.
 
-The workflow is a good reference for automated maintenance. The repo also contains a `checks.yml` workflow for CI (lint/format checks).
+The workflow is a good reference for automated maintenance. The monorepo's `.github/workflows/ci.yml` also runs a `wiki` job against this package (typecheck, lint, build, a CLI smoke test — `node dist/cli.js code --dry-run --init` with `OPENWIKI_DEV=1` — and tests) plus a sibling `wiki-audit` job that runs a Trivy dependency scan (`scan-ref: apps/wiki`, `severity: HIGH,CRITICAL`, `exit-code: 1`) and uploads the SARIF results.
 
 The repository also includes `examples/openwiki-update.gitlab-ci.yml` as a copyable GitLab CI scheduled update job. It:
 
@@ -255,6 +255,7 @@ Bitbucket users should configure repository variables for the model provider key
 - `examples/openwiki-update.yml`
 - `examples/openwiki-update.gitlab-ci.yml`
 - `examples/openwiki-update.bitbucket-pipelines.yml`
-- `.github/workflows/openwiki-update.yml`
+- `.github/workflows/wiki-openwiki-update.yml` (monorepo root)
+- `.github/workflows/ci.yml` (monorepo root)
 - `README.md`
 - Git evidence: commits `ceded10`, `f89b05d`, `8278c36`, `0fa1430`, `148a0b9`
