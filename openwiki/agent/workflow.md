@@ -1,7 +1,7 @@
 ---
 type: Technical documentation
 title: Agent workflow
-description: Explains the OpenWiki documentation agent's command flow, provider and model setup, prompting rules, and update metadata behavior. Documents the agent's Git-grounded workflow, content snapshot safeguards, and source implementation map for maintaining agent behavior.
+description: Explains the ArgusWiki documentation agent's command flow, provider and model setup, prompting rules, and update metadata behavior. Documents the agent's Git-grounded workflow, content snapshot safeguards, and source implementation map for maintaining agent behavior.
 tags: [agent, workflow, documentation, providers, update-metadata]
 ---
 
@@ -13,9 +13,9 @@ The documentation agent is implemented in `src/agent/`. It takes a command (`cha
 
 `src/agent/index.ts` follows this sequence for non-chat runs:
 
-1. Load `~/.openwiki/.env` into `process.env`.
+1. Load `~/.arguswiki/.env` into `process.env`.
 2. Resolve the provider via `resolveConfiguredProvider()` and ensure the provider's API key exists.
-3. Resolve the model ID from CLI input, `OPENWIKI_MODEL_ID`, or the provider's default model.
+3. Resolve the model ID from CLI input, `ARGUSWIKI_MODEL_ID`, or the provider's default model.
 4. Create a run context from Git state and prior update metadata.
 5. Snapshot the current `openwiki/` content hash (before the run).
 6. Build the system prompt and user prompt.
@@ -26,7 +26,7 @@ The documentation agent is implemented in `src/agent/`. It takes a command (`cha
 
 Chat runs skip metadata writes entirely.
 
-This sequence applies to every provider except `claude-cli`: when `OPENWIKI_PROVIDER=claude-cli`, `src/agent/index.ts` branches to `runClaudeCliAgent()` right after resolving the provider, skipping model creation and the DeepAgents backend entirely. See [Claude Code CLI provider](#claude-code-cli-provider) below.
+This sequence applies to every provider except `claude-cli`: when `ARGUSWIKI_PROVIDER=claude-cli`, `src/agent/index.ts` branches to `runClaudeCliAgent()` right after resolving the provider, skipping model creation and the DeepAgents backend entirely. See [Claude Code CLI provider](#claude-code-cli-provider) below.
 
 ## Provider-specific model creation
 
@@ -34,9 +34,9 @@ This sequence applies to every provider except `claude-cli`: when `OPENWIKI_PROV
 
 - **anthropic**: `new ChatAnthropic(modelId, { apiKey, anthropicApiUrl? })` — uses `@langchain/anthropic` directly. When `ANTHROPIC_BASE_URL` is set, the resolved alternative base URL is passed as `anthropicApiUrl` so requests can be routed to a self-hosted or proxied Anthropic-compatible endpoint instead of the default API.
 - **openai-chatgpt**: `new ChatOpenAI({ apiKey: tokens.access, model, useResponsesApi: true, zdrEnabled: true, streaming: true, configuration: { baseURL: CODEX_RESPONSES_BASE_URL, defaultHeaders, fetch } })` — uses ChatGPT OAuth tokens instead of an API key. Tokens are refreshed before model creation via `ensureFreshChatGptTokens()` in `src/agent/openai-chatgpt-oauth.ts`. The Codex backend requires `store: false` (`zdrEnabled`) and streaming for all requests. If tokens are missing, the run aborts with a clear message directing the user to sign in.
-- **openrouter**: `new ChatOpenRouter({ apiKey, baseURL, model, siteName: "OpenWiki" })` — uses the selected OpenRouter model directly.
+- **openrouter**: `new ChatOpenRouter({ apiKey, baseURL, model, siteName: "ArgusWiki" })` — uses the selected OpenRouter model directly.
 - **openai**: `new ChatOpenAI({ apiKey, model, useResponsesApi: true })` — uses OpenAI's Responses API for official OpenAI calls.
-- **baseten / fireworks / openai-compatible**: `new ChatOpenAI({ apiKey, configuration: { baseURL? }, model })` — OpenAI-compatible clients using the provider's base URL when configured. The `openai-compatible` provider has no default endpoint; its base URL is user-supplied via `OPENAI_COMPATIBLE_BASE_URL` and required (`requiresBaseUrl: true`), which lets OpenWiki target any OpenAI-compatible gateway (for example a LiteLLM gateway fronting upstream providers).
+- **baseten / fireworks / openai-compatible**: `new ChatOpenAI({ apiKey, configuration: { baseURL? }, model })` — OpenAI-compatible clients using the provider's base URL when configured. The `openai-compatible` provider has no default endpoint; its base URL is user-supplied via `OPENAI_COMPATIBLE_BASE_URL` and required (`requiresBaseUrl: true`), which lets ArgusWiki target any OpenAI-compatible gateway (for example a LiteLLM gateway fronting upstream providers).
 
 Base URLs are resolved through `resolveProviderBaseUrl()` in `src/constants.ts`, which prefers a provider's alternative base URL environment variable (`baseUrlEnvKey`) over the built-in default before falling back to the SDK's own default endpoint. Providers marked `requiresBaseUrl` are validated at startup by `ensureProviderBaseUrl()`.
 
@@ -44,12 +44,12 @@ Provider retry attempts are resolved through `resolveProviderRetryAttempts()` an
 
 ## Claude Code CLI provider
 
-`OPENWIKI_PROVIDER=claude-cli` runs an entirely separate path implemented in `src/agent/claude-cli/`, not a `createModel()` branch:
+`ARGUSWIKI_PROVIDER=claude-cli` runs an entirely separate path implemented in `src/agent/claude-cli/`, not a `createModel()` branch:
 
 - `claude-cli-backend.ts` (`runClaudeCliAgent()`) spawns the operator's already-authenticated `claude` CLI binary as a subprocess (`spawn("claude", [...])`) with `--output-format json`, `--permission-mode acceptEdits`, and a `--system-prompt`/user prompt built by the dedicated prompt module, reusing the same run-context, content-snapshot, and metadata bookkeeping (`persistRunMetadataIfChanged`) as the DeepAgents-based providers.
 - `prompt.ts` (`createClaudeCliSystemPrompt`/`createClaudeCliUserPrompt`) mirrors the product rules in `src/agent/prompt.ts` but targets the spawned CLI's own native tools (Read/Write/Edit/Bash/Grep/Glob) operating on real filesystem paths, not DeepAgents' virtual filesystem. It has no connector tools available.
-- Because this path bypasses `OpenWikiLocalShellBackend` entirely, the docs-only write restriction is re-enforced out of band: a temporary `--settings` file registers a `PreToolUse` hook (`write-guard-hook.ts`) matching `Write|Edit` calls, backed by pure path-decision logic in `write-guard.ts` (`evaluateWritePath()`) that refuses writes outside the repository root or outside the configured `openwiki/`-relative directory.
-- It is keyless — there is no API key or OAuth step, so it is deliberately excluded from `SELECTABLE_OPENWIKI_PROVIDERS` and only reachable by explicitly setting `OPENWIKI_PROVIDER=claude-cli`. It requires the `claude` CLI to be installed and already authenticated in the run environment (for example a self-hosted CI runner under an operator's account).
+- Because this path bypasses `ArgusWikiLocalShellBackend` entirely, the docs-only write restriction is re-enforced out of band: a temporary `--settings` file registers a `PreToolUse` hook (`write-guard-hook.ts`) matching `Write|Edit` calls, backed by pure path-decision logic in `write-guard.ts` (`evaluateWritePath()`) that refuses writes outside the repository root or outside the configured `openwiki/`-relative directory.
+- It is keyless — there is no API key or OAuth step, so it is deliberately excluded from `SELECTABLE_ARGUSWIKI_PROVIDERS` and only reachable by explicitly setting `ARGUSWIKI_PROVIDER=claude-cli`. It requires the `claude` CLI to be installed and already authenticated in the run environment (for example a self-hosted CI runner under an operator's account).
 - v1 scope only supports `repository` output mode; passing `local-wiki` output mode throws.
 
 ## Prompting strategy
@@ -65,7 +65,7 @@ Provider retry attempts are resolved through `resolveProviderRetryAttempts()` an
 - avoid reading secrets or `.env` files,
 - use git history for init and update runs,
 - respect the temporary plan file and update metadata requirements,
-- ensure top-level `/AGENTS.md` and/or `/CLAUDE.md` reference the OpenWiki quickstart (inserting or refreshing a standardized section).
+- ensure top-level `/AGENTS.md` and/or `/CLAUDE.md` reference the ArgusWiki quickstart (inserting or refreshing a standardized section).
 
 The user prompt changes with the command:
 
@@ -75,7 +75,7 @@ The user prompt changes with the command:
 
 ### Local brain open questions
 
-Local brain runs use `~/.openwiki/wiki/open-questions.md` as a compact queue for uncertainty about the user's wiki or core memory model, not as a place to copy unresolved questions from every source document. Good open questions are things that would impair future assistance, such as unclear recurring routines, missing locations, uncertain preferences, ambiguous people/org relationships, or contradictions between sources.
+Local brain runs use `~/.arguswiki/wiki/open-questions.md` as a compact queue for uncertainty about the user's wiki or core memory model, not as a place to copy unresolved questions from every source document. Good open questions are things that would impair future assistance, such as unclear recurring routines, missing locations, uncertain preferences, ambiguous people/org relationships, or contradictions between sources.
 
 Do not add an open question merely because a Notion spec, meeting note, email thread, or source page contains open product/design questions. Keep those on source pages, `themes.md`, or `commitments.md` unless they are explicitly owned by the user or reveal a gap in the user's memory graph. Group similar questions under one topic key instead of creating many same-project entries.
 
@@ -120,11 +120,11 @@ That metadata is later used to scope update runs.
 
 ### Content snapshot
 
-`createOpenWikiContentSnapshot()` computes a SHA-256 hash of the entire `openwiki/` directory tree (excluding `.last-update.json`). The agent runtime takes a snapshot before and after the run. If they match — meaning the model made no documentation changes — the metadata file is not updated. This prevents scheduled update loops from churning the metadata when the wiki is already current.
+`createArgusWikiContentSnapshot()` computes a SHA-256 hash of the entire `openwiki/` directory tree (excluding `.last-update.json`). The agent runtime takes a snapshot before and after the run. If they match — meaning the model made no documentation changes — the metadata file is not updated. This prevents scheduled update loops from churning the metadata when the wiki is already current.
 
 ## Model errors
 
-The agent runtime uses only the selected provider and model for a run. Transient request failures use the LangChain model client's retry handling, configurable with `OPENWIKI_PROVIDER_RETRY_ATTEMPTS`. If the selected provider/model still fails, OpenWiki surfaces the provider error and stops instead of retrying with another model.
+The agent runtime uses only the selected provider and model for a run. Transient request failures use the LangChain model client's retry handling, configurable with `ARGUSWIKI_PROVIDER_RETRY_ATTEMPTS`. If the selected provider/model still fails, ArgusWiki surfaces the provider error and stops instead of retrying with another model.
 
 ## Why this matters
 
@@ -143,7 +143,7 @@ The agent is not just a generic chat wrapper. It is intentionally constrained so
 - The content-snapshot check means a no-op update will not update metadata. If you change the snapshot logic, ensure `.last-update.json` is still excluded.
 - Credential loading happens before model resolution; changes there affect both onboarding and agent startup.
 - When adding a provider, add a branch in `createModel()` and ensure the API key env key is checked in `ensureProviderKey()`. OAuth-based providers (like `openai-chatgpt`) skip `ensureProviderKey()` and instead require a token refresh step before `createModel()` is called.
-- The DeepAgents backend is configured with `virtualMode: true`, which is important for documentation-only behavior. The custom `OpenWikiLocalShellBackend` in `src/agent/docs-only-backend.ts` adds docs-only write guards that restrict writes to the `openwiki/` directory in docs-only mode.
+- The DeepAgents backend is configured with `virtualMode: true`, which is important for documentation-only behavior. The custom `ArgusWikiLocalShellBackend` in `src/agent/docs-only-backend.ts` adds docs-only write guards that restrict writes to the `openwiki/` directory in docs-only mode.
 
 ## Source map
 

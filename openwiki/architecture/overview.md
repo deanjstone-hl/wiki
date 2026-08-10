@@ -1,29 +1,29 @@
 ---
 type: Architecture overview
-title: OpenWiki Architecture Overview
-description: Explains OpenWiki's layered CLI, agent, provider, connector, authentication, and ingestion architecture, including runtime execution and persistence. Identifies core source modules, extension points, and operational considerations for maintaining OpenWiki.
+title: ArgusWiki Architecture Overview
+description: Explains ArgusWiki's layered CLI, agent, provider, connector, authentication, and ingestion architecture, including runtime execution and persistence. Identifies core source modules, extension points, and operational considerations for maintaining ArgusWiki.
 tags: [architecture, cli, agent, providers, connectors, ingestion]
 ---
 
 # Architecture overview
 
-OpenWiki has a small but layered architecture:
+ArgusWiki has a small but layered architecture:
 
 1. `src/cli.tsx` provides the interactive terminal application and orchestrates runs, including auto-exit for init/update.
 2. `src/commands.ts` parses argv and defines help text and supported options, including `auth`, `ngrok`, `cron`, and `ingest` subcommands.
 3. `src/credentials.tsx` manages interactive onboarding for provider selection, API keys, model selection, and optional LangSmith tracing.
-4. `src/env.ts` reads and writes `~/.openwiki/.env` and surfaces credential diagnostics for all supported providers.
+4. `src/env.ts` reads and writes `~/.arguswiki/.env` and surfaces credential diagnostics for all supported providers.
 5. `src/agent/index.ts` runs the documentation agent, resolves the provider, creates the appropriate model client, collects Git context, and writes update metadata.
 6. `src/agent/prompt.ts` builds the system and user prompts that tell the model how to behave.
-7. `src/agent/utils.ts` gathers Git evidence, computes an OpenWiki content snapshot, and records `.last-update.json` after successful init/update runs.
-8. `src/agent/docs-only-backend.ts` provides `OpenWikiLocalShellBackend`, extending DeepAgents `LocalShellBackend` with docs-only write guards and output-mode awareness.
+7. `src/agent/utils.ts` gathers Git evidence, computes an ArgusWiki content snapshot, and records `.last-update.json` after successful init/update runs.
+8. `src/agent/docs-only-backend.ts` provides `ArgusWikiLocalShellBackend`, extending DeepAgents `LocalShellBackend` with docs-only write guards and output-mode awareness.
 9. `src/agent/openai-chatgpt-oauth.ts` implements the ChatGPT OAuth login flow, token persistence, and refresh for the `openai-chatgpt` provider.
 10. `src/auth/` contains the connector OAuth system: `oauth.ts` (generic runner), `providers.ts` (provider configs), `configure.ts` (`openwiki auth configure`), `ngrok.ts` (Slack HTTPS tunnel), `tokens.ts` (refresh/validation), and `types.ts`.
 11. `src/connectors/` contains the connector registry, MCP client/runtime, source-specific ingestion modules (git-repo, gmail, hackernews, slack, web-search, x), and tool definitions exposed to the agent.
 12. `src/ingestion.ts` orchestrates source ingestion runs across configured connectors.
 13. `src/code-mode.ts` handles `openwiki code` setup: writes a GitHub Actions workflow and AGENTS.md/CLAUDE.md snippets.
 14. `src/constants.ts` centralizes provider configs, model options, environment keys, validation helpers, and the wiki directory names.
-15. `src/agent/types.ts` defines shared types: `OpenWikiCommand`, `RunContext`, `UpdateMetadata`, and run option/event interfaces.
+15. `src/agent/types.ts` defines shared types: `ArgusWikiCommand`, `RunContext`, `UpdateMetadata`, and run option/event interfaces.
 
 ## Runtime shape
 
@@ -47,7 +47,7 @@ For non-chat runs, the agent receives a `RunContext` that includes last-update m
 
 The agent runtime resolves the provider via `resolveConfiguredProvider()` in `src/constants.ts`:
 
-1. If `OPENWIKI_PROVIDER` is set and valid, use it.
+1. If `ARGUSWIKI_PROVIDER` is set and valid, use it.
 2. Otherwise, use the first available provider API key in this order: OpenAI, OpenAI-compatible, OpenRouter, Anthropic, Baseten, Fireworks, then NVIDIA.
 3. Otherwise, fall back to `DEFAULT_PROVIDER` (`openai`) and its default model (`gpt-5.6-terra`).
 
@@ -59,13 +59,13 @@ Model creation branches by provider in `src/agent/index.ts` (`createModel`):
 - **openrouter** → `ChatOpenRouter` with the selected model ID.
 - **openai** → `ChatOpenAI` with `useResponsesApi: true`.
 - **baseten / fireworks / nvidia / openai-compatible** → `ChatOpenAI` with the provider's API key and optional custom `baseURL` from `PROVIDER_CONFIGS`.
-- **claude-cli** → does not use `createModel`/DeepAgents at all. `src/agent/index.ts` branches to `runClaudeCliAgent()` (`src/agent/claude-cli/claude-cli-backend.ts`) before model creation, spawning the operator's already-authenticated `claude` CLI binary as a subprocess. It has its own prompt builder (`src/agent/claude-cli/prompt.ts`) and re-enforces the docs-only write restriction via a `PreToolUse` hook (`write-guard-hook.ts` / `write-guard.ts`) instead of `OpenWikiLocalShellBackend`, since this path bypasses DeepAgents entirely. It is keyless (no API key/OAuth) and deliberately excluded from `SELECTABLE_OPENWIKI_PROVIDERS` — opt-in only via `OPENWIKI_PROVIDER=claude-cli` — and v1 supports only `repository` output mode. See [Agent workflow](../agent/workflow.md) for the full flow.
+- **claude-cli** → does not use `createModel`/DeepAgents at all. `src/agent/index.ts` branches to `runClaudeCliAgent()` (`src/agent/claude-cli/claude-cli-backend.ts`) before model creation, spawning the operator's already-authenticated `claude` CLI binary as a subprocess. It has its own prompt builder (`src/agent/claude-cli/prompt.ts`) and re-enforces the docs-only write restriction via a `PreToolUse` hook (`write-guard-hook.ts` / `write-guard.ts`) instead of `ArgusWikiLocalShellBackend`, since this path bypasses DeepAgents entirely. It is keyless (no API key/OAuth) and deliberately excluded from `SELECTABLE_ARGUSWIKI_PROVIDERS` — opt-in only via `ARGUSWIKI_PROVIDER=claude-cli` — and v1 supports only `repository` output mode. See [Agent workflow](../agent/workflow.md) for the full flow.
 
 Credential gating before model creation uses `getMissingProviderEnvKey()` in `src/constants.ts`, which requires the provider's API key — or `GOOGLE_CLOUD_PROJECT` for vertex — and powers the same check in the CLI's non-interactive gates and the onboarding flow.
 
 ### DeepAgents backend
 
-The agent uses a DeepAgents `LocalShellBackend` rooted at the repository, configured with `virtualMode: true`, `maxOutputBytes: 100_000`, and a 120 second timeout. A SQLite checkpointer (`~/.openwiki/openwiki.sqlite`) persists conversation threads keyed by a hash of the repository path.
+The agent uses a DeepAgents `LocalShellBackend` rooted at the repository, configured with `virtualMode: true`, `maxOutputBytes: 100_000`, and a 120 second timeout. A SQLite checkpointer (`~/.arguswiki/arguswiki.sqlite`) persists conversation threads keyed by a hash of the repository path.
 
 ### Content snapshot and metadata writes
 
@@ -82,7 +82,7 @@ The current design reflects a documentation product rather than a general-purpos
 - The CLI owns user experience and credential bootstrap so the tool is install-and-run friendly.
 - Git evidence is collected in the host process before the agent starts so the model sees stable repository context.
 - Provider support is centralized in `src/constants.ts` so adding a provider is a single-config change plus a model-creation branch.
-- Model execution is provider-stable: transient request failures can retry through the selected LangChain model client, but OpenWiki surfaces the final error instead of continuing with another model.
+- Model execution is provider-stable: transient request failures can retry through the selected LangChain model client, but ArgusWiki surfaces the final error instead of continuing with another model.
 - The content-snapshot check prevents metadata churn when an update run produces no documentation changes, which is important for scheduled CI workflows.
 - Auto-exit for init/update makes the CLI usable in both interactive and one-shot contexts without requiring `--print`.
 
@@ -90,7 +90,7 @@ The current design reflects a documentation product rather than a general-purpos
 
 - Add or refine CLI commands in `src/commands.ts` and the corresponding UI behavior in `src/cli.tsx`.
 - Change onboarding or local credential storage in `src/credentials.tsx` and `src/env.ts`.
-- Add a new model provider by extending `PROVIDER_CONFIGS` and `OpenWikiProvider` in `src/constants.ts`, then adding a branch in `createModel` in `src/agent/index.ts`.
+- Add a new model provider by extending `PROVIDER_CONFIGS` and `ArgusWikiProvider` in `src/constants.ts`, then adding a branch in `createModel` in `src/agent/index.ts`.
 - Adjust model defaults, validation, or fallback lists in `src/constants.ts`.
 - Extend the documentation prompt or Git evidence in `src/agent/prompt.ts` and `src/agent/utils.ts`.
 - Modify run persistence or snapshot behavior in `src/agent/utils.ts`.

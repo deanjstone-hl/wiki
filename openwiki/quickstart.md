@@ -1,23 +1,23 @@
 ---
 type: Quickstart Guide
-title: OpenWiki Quickstart
-description: Quickstart reference for the OpenWiki TypeScript CLI, including documentation-generation workflows, supported model providers, and the primary source files. Use it to navigate the repository's architecture, commands, agent runtime, operations, and connectors.
-tags: [openwiki, quickstart, cli, documentation]
+title: ArgusWiki Quickstart
+description: Quickstart reference for the ArgusWiki TypeScript CLI, including documentation-generation workflows, supported model providers, and the primary source files. Use it to navigate the repository's architecture, commands, agent runtime, operations, and connectors.
+tags: [arguswiki, quickstart, cli, documentation]
 ---
 
-# OpenWiki quickstart
+# ArgusWiki quickstart
 
-OpenWiki is a TypeScript CLI that writes and maintains documentation for a repository using an agent-driven workflow. The package exposes a single `openwiki` binary, stores local credentials in `~/.openwiki/.env`, and records successful update metadata in `openwiki/.last-update.json`.
+ArgusWiki is a TypeScript CLI that writes and maintains documentation for a repository using an agent-driven workflow. The package exposes a single `openwiki` binary (the command name itself was not renamed in the OpenWiki→ArgusWiki rebrand), stores local credentials in `~/.arguswiki/.env`, and records successful update metadata in `openwiki/.last-update.json`.
 
 ## What this repository does
 
-- Launches an interactive Ink-based terminal app for chatting with the OpenWiki agent.
+- Launches an interactive Ink-based terminal app for chatting with the ArgusWiki agent.
 - Supports one-shot documentation runs with `--init`, `--update`, and `--print`.
 - Supports multiple model providers — OpenAI (default, API key or ChatGPT OAuth login), OpenRouter, Anthropic, Baseten, Fireworks, NVIDIA NIM, any OpenAI-compatible gateway, and Google Vertex AI (Claude models) — each with their own credentials and model list (Vertex uses Google ADC instead of an API key).
 - Uses a DeepAgents local shell backend with virtual filesystem paths rooted at the target repository.
-- Creates or refreshes documentation under the target repository's `openwiki/` directory.
+- Creates or refreshes documentation under the target repository's `arguswiki/` directory by default (`OPEN_WIKI_DIR`, overridable via `ARGUSWIKI_OUTPUT_DIR`); this repository's own docs stay under `openwiki/` via an explicit override — see [Credentials and updates](./operations/credentials-and-updates.md).
 - Auto-exits after successful `--init` or `--update` runs in an interactive terminal, so the CLI works as both a one-shot and interactive tool.
-- Optionally schedules automated updates through GitHub Actions, GitLab CI, or Bitbucket Pipelines.
+- Optionally schedules automated updates through GitHub Actions (see `examples/arguswiki-update.yml`).
 
 ## Start here
 
@@ -36,8 +36,8 @@ OpenWiki is a TypeScript CLI that writes and maintains documentation for a repos
 - `src/agent/index.ts` — agent runtime, provider-specific model creation (including ChatGPT OAuth), fallback, and metadata writes.
 - `src/agent/prompt.ts` — prompt assembly, documentation-run instructions, and AGENTS.md/CLAUDE.md insertion rules.
 - `src/agent/utils.ts` — git evidence collection, content snapshot, and `.last-update.json` handling.
-- `src/agent/types.ts` — shared agent types (`OpenWikiCommand`, `RunContext`, `UpdateMetadata`, run options/events).
-- `src/agent/docs-only-backend.ts` — `OpenWikiLocalShellBackend`, extends DeepAgents `LocalShellBackend` with docs-only write guards and output-mode awareness.
+- `src/agent/types.ts` — shared agent types (`ArgusWikiCommand`, `RunContext`, `UpdateMetadata`, run options/events).
+- `src/agent/docs-only-backend.ts` — `ArgusWikiLocalShellBackend`, extends DeepAgents `LocalShellBackend` with docs-only write guards and output-mode awareness.
 - `src/agent/openai-chatgpt-oauth.ts` — ChatGPT OAuth flow, token persistence, and refresh logic for the `openai-chatgpt` provider.
 - `src/agent/claude-cli/` — keyless `claude-cli` provider backend: spawns the operator's authenticated `claude` CLI as a subprocess instead of calling a hosted API, with its own prompt builder and an out-of-band `PreToolUse` write guard. See [Agent workflow](./agent/workflow.md#claude-code-cli-provider).
 - `src/auth/oauth.ts` — generic OAuth runner for connector providers (Gmail, Notion, Slack, X).
@@ -48,12 +48,10 @@ OpenWiki is a TypeScript CLI that writes and maintains documentation for a repos
 - `src/connectors/` — connector registry, MCP client/runtime, source-specific ingestion (git-repo, gmail, hackernews, slack, web-search, x), and tool definitions.
 - `src/ingestion.ts` — orchestrates source ingestion runs across configured connectors.
 - `src/code-mode.ts` — `openwiki code` setup: writes GitHub Actions workflow and AGENTS.md/CLAUDE.md snippets.
-- `src/env.ts` — `~/.openwiki/.env` persistence and credential diagnostics; base directory is overridable via `OPENWIKI_HOME`.
+- `src/env.ts` — `~/.arguswiki/.env` persistence and credential diagnostics; base directory is overridable via `ARGUSWIKI_HOME`.
 - `src/credentials.tsx` — interactive onboarding flow for provider selection, API keys, and model selection.
 - `src/constants.ts` — provider configs, model options, env keys, and validation helpers.
-- `examples/openwiki-update.yml` — GitHub Actions scheduled automation example.
-- `examples/openwiki-update.gitlab-ci.yml` — GitLab CI scheduled automation example.
-- `examples/openwiki-update.bitbucket-pipelines.yml` — Bitbucket Pipelines scheduled automation example.
+- `examples/arguswiki-update.yml` — GitHub Actions scheduled automation example.
 
 ## Documentation map
 
@@ -66,9 +64,9 @@ OpenWiki is a TypeScript CLI that writes and maintains documentation for a repos
 ## Notes for future agents
 
 - The repository is intentionally focused: the main product surface is the CLI plus the documentation-generation agent.
-- Treat `openwiki/` in this repo as generated documentation output from a future OpenWiki run, not as application source.
+- Treat `openwiki/` in this repo as generated documentation output from a future ArgusWiki run, not as application source (this repo overrides the default output directory name — see [Credentials and updates](./operations/credentials-and-updates.md)).
 - When changing behavior, verify both the CLI parser and the agent prompt/runtime, because user-visible semantics are split across `src/commands.ts`, `src/cli.tsx`, and `src/agent/*`.
-- Provider support is centralized in `src/constants.ts`. Adding or changing a provider means updating `PROVIDER_CONFIGS`, the `OpenWikiProvider` type, the `SELECTABLE_OPENWIKI_PROVIDERS` list, and the model-creation branch in `src/agent/index.ts`. OAuth-based providers also need an entry in `src/auth/` if they use browser-login flows.
+- Provider support is centralized in `src/constants.ts`. Adding or changing a provider means updating `PROVIDER_CONFIGS`, the `ArgusWikiProvider` type, the `SELECTABLE_ARGUSWIKI_PROVIDERS` list, and the model-creation branch in `src/agent/index.ts`. OAuth-based providers also need an entry in `src/auth/` if they use browser-login flows.
 
 ## Source map
 
@@ -108,10 +106,8 @@ OpenWiki is a TypeScript CLI that writes and maintains documentation for a repos
 - `src/ingestion.ts`
 - `src/code-mode.ts`
 - `src/env.ts`
-- `src/openwiki-home.ts`
+- `src/arguswiki-home.ts`
 - `src/credentials.tsx`
 - `src/constants.ts`
-- `examples/openwiki-update.yml`
-- `examples/openwiki-update.gitlab-ci.yml`
-- `examples/openwiki-update.bitbucket-pipelines.yml`
+- `examples/arguswiki-update.yml`
 - Git evidence: commits `ceded10`, `f89b05d`, `a82759f`, `dfa73cc`, `fd3a702`, `8278c36`, `0fa1430`, `070a382`, `5210cc4`, `9f2c252`, `7c3d1df`

@@ -35,7 +35,7 @@ When working in this package, read the ArgusWiki quickstart first, then follow i
 
 ## ArgusWiki
 
-This repository uses ArgusWiki for recurring code documentation. Start with `openwiki/quickstart.md`, then follow its links to architecture, workflows, domain concepts, operations, integrations, testing guidance, and source maps.
+This repository uses ArgusWiki for recurring code documentation. Start with `arguswiki/quickstart.md`, then follow its links to architecture, workflows, domain concepts, operations, integrations, testing guidance, and source maps.
 
 The scheduled ArgusWiki GitHub Actions workflow refreshes the repository wiki. Do not hand-edit generated ArgusWiki pages unless explicitly asked; prefer updating source code/docs and letting ArgusWiki regenerate.
 

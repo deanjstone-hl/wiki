@@ -1,13 +1,13 @@
 ---
 type: CLI reference
-title: OpenWiki CLI usage
-description: Reference for OpenWiki command-line usage, including interactive and non-interactive runs, initialization and update modes, connector operations, and authentication setup. Covers provider configuration, model selection, validation, and the source files to update when changing CLI behavior.
-tags: [openwiki, cli, commands, configuration, authentication]
+title: ArgusWiki CLI usage
+description: Reference for ArgusWiki command-line usage, including interactive and non-interactive runs, initialization and update modes, connector operations, and authentication setup. Covers provider configuration, model selection, validation, and the source files to update when changing CLI behavior.
+tags: [arguswiki, cli, commands, configuration, authentication]
 ---
 
 # CLI usage
 
-OpenWiki ships as a single `openwiki` binary and is intended to work both as an interactive terminal app and as a one-shot documentation runner.
+ArgusWiki ships as a single `openwiki` binary (the command name itself was not part of the OpenWiki→ArgusWiki rebrand) and is intended to work both as an interactive terminal app and as a one-shot documentation runner.
 
 ## Commands and modes
 
@@ -17,7 +17,7 @@ From `src/commands.ts` and `README.md`, the supported entry patterns are:
 - `openwiki "message"` — send a chat message immediately, then stay open.
 - `openwiki personal --init [message]` — generate initial local personal brain wiki documentation.
 - `openwiki code --init [message]` — generate initial repository documentation.
-- `openwiki --update [message]` — refresh existing OpenWiki documentation.
+- `openwiki --update [message]` — refresh existing ArgusWiki documentation.
 - `openwiki -p, --print` — run once and print the final assistant output (non-interactive).
 - `openwiki --modelId <id>` / `--model-id <id>` — choose a model ID for the run.
 - `openwiki --help` / `-h` — print usage, options, and examples.
@@ -44,7 +44,7 @@ When explicit init (`openwiki personal --init` or `openwiki code --init`) or `--
 
 ### Non-interactive mode
 
-If stdin is not a TTY (e.g. CI), or `--print` is used, the CLI requires the provider's credentials to be already saved in `~/.openwiki/.env` or present in the environment — the provider API key, or `GOOGLE_CLOUD_PROJECT` for the vertex provider. It will error with a clear message if the value is missing, rather than prompting interactively.
+If stdin is not a TTY (e.g. CI), or `--print` is used, the CLI requires the provider's credentials to be already saved in `~/.arguswiki/.env` or present in the environment — the provider API key, or `GOOGLE_CLOUD_PROJECT` for the vertex provider. It will error with a clear message if the value is missing, rather than prompting interactively.
 
 ## Interactive behavior
 
@@ -58,19 +58,19 @@ If stdin is not a TTY (e.g. CI), or `--print` is used, the CLI requires the prov
 - completed-run history and error display,
 - exit handling for help, errors, and explicit `/exit` messages.
 
-The UI persists provider and model selection back to `~/.openwiki/.env` through `saveOpenWikiEnv()`.
+The UI persists provider and model selection back to `~/.arguswiki/.env` through `saveArgusWikiEnv()`.
 
 ## Credentials and onboarding
 
 The first interactive run can prompt for:
 
-- a **provider** (`OPENWIKI_PROVIDER`) — openai, openai-chatgpt, openrouter, baseten, fireworks, nvidia, openai-compatible, anthropic, or vertex (the `claude-cli` provider is keyless and deliberately excluded from this interactive list — see [Claude Code CLI provider](#claude-code-cli-provider) below),
+- a **provider** (`ARGUSWIKI_PROVIDER`) — openai, openai-chatgpt, openrouter, baseten, fireworks, nvidia, openai-compatible, anthropic, or vertex (the `claude-cli` provider is keyless and deliberately excluded from this interactive list — see [Claude Code CLI provider](#claude-code-cli-provider) below),
 - the **provider API key** (e.g. `OPENROUTER_API_KEY`, `OPENAI_API_KEY`, `OPENAI_COMPATIBLE_API_KEY`, `ANTHROPIC_API_KEY`, `BASETEN_API_KEY`, `FIREWORKS_API_KEY`) — skipped for the vertex provider, which instead prompts for a **GCP project** (`GOOGLE_CLOUD_PROJECT`, required) and a **GCP location** (`GOOGLE_CLOUD_LOCATION`, optional, defaults to `global`),
 - a **base URL** for providers that require one (the openai-compatible provider prompts for `OPENAI_COMPATIBLE_BASE_URL`),
-- a **model ID** stored as `OPENWIKI_MODEL_ID` — chosen from the provider's model list or a custom ID,
+- a **model ID** stored as `ARGUSWIKI_MODEL_ID` — chosen from the provider's model list or a custom ID,
 - optional `LANGSMITH_API_KEY` for tracing.
 
-If a LangSmith key is provided, onboarding also enables `LANGCHAIN_PROJECT=openwiki` and `LANGCHAIN_TRACING_V2=true`.
+If a LangSmith key is provided, onboarding also enables `LANGCHAIN_PROJECT=arguswiki` and `LANGCHAIN_TRACING_V2=true`.
 
 `src/credentials.tsx` determines whether setup is needed and walks the user through the missing values using arrow-key selection menus for provider and model. See [Credentials and updates](../operations/credentials-and-updates.md) for details.
 
@@ -90,22 +90,22 @@ Providers and their model options are defined in `PROVIDER_CONFIGS` in `src/cons
 | anthropic         | `ANTHROPIC_API_KEY`                                 | (default, or `ANTHROPIC_BASE_URL`)             | Haiku, Sonnet, Opus                                                   |
 | vertex            | none (Google ADC) — `GOOGLE_CLOUD_PROJECT` required | per `GOOGLE_CLOUD_LOCATION` (default `global`) | Haiku, Sonnet, Opus (Claude on Vertex AI)                             |
 
-The default provider is `openai`, and the default model is `gpt-5.6-terra`. `resolveConfiguredProvider()` picks the provider from `OPENWIKI_PROVIDER`, then falls back to the first configured provider API key in this order: OpenAI, OpenAI-compatible, OpenRouter, Anthropic, Baseten, Fireworks, NVIDIA, and finally `DEFAULT_PROVIDER`. `claude-cli` is never picked by this fallback order — it only runs when `OPENWIKI_PROVIDER=claude-cli` is set explicitly.
+The default provider is `openai`, and the default model is `gpt-5.6-terra`. `resolveConfiguredProvider()` picks the provider from `ARGUSWIKI_PROVIDER`, then falls back to the first configured provider API key in this order: OpenAI, OpenAI-compatible, OpenRouter, Anthropic, Baseten, Fireworks, NVIDIA, and finally `DEFAULT_PROVIDER`. `claude-cli` is never picked by this fallback order — it only runs when `ARGUSWIKI_PROVIDER=claude-cli` is set explicitly.
 
 ### Claude Code CLI provider
 
-Setting `OPENWIKI_PROVIDER=claude-cli` runs OpenWiki against the operator's own already-authenticated `claude` CLI binary as a subprocess instead of calling a hosted API. There is no API key, base URL, or model list to configure — `OPENWIKI_MODEL_ID`, if set, is passed through to `claude --model`. It requires the `claude` CLI to be installed and signed in on the machine running OpenWiki, which makes it a good fit for a self-hosted CI runner under an operator's account rather than the interactive onboarding flow. It only supports `repository` output mode. See [Agent workflow: Claude Code CLI provider](../agent/workflow.md#claude-code-cli-provider) for the execution details, including how the docs-only write restriction is enforced for this path.
+Setting `ARGUSWIKI_PROVIDER=claude-cli` runs ArgusWiki against the operator's own already-authenticated `claude` CLI binary as a subprocess instead of calling a hosted API. There is no API key, base URL, or model list to configure — `ARGUSWIKI_MODEL_ID`, if set, is passed through to `claude --model`. It requires the `claude` CLI to be installed and signed in on the machine running ArgusWiki, which makes it a good fit for a self-hosted CI runner under an operator's account rather than the interactive onboarding flow. It only supports `repository` output mode. See [Agent workflow: Claude Code CLI provider](../agent/workflow.md#claude-code-cli-provider) for the execution details, including how the docs-only write restriction is enforced for this path.
 
 ### Provider retry attempts
 
-Set `OPENWIKI_PROVIDER_RETRY_ATTEMPTS` to override the number of retries after
+Set `ARGUSWIKI_PROVIDER_RETRY_ATTEMPTS` to override the number of retries after
 the first provider request. The value must be a positive integer:
 
 ```bash
-OPENWIKI_PROVIDER_RETRY_ATTEMPTS=3
+ARGUSWIKI_PROVIDER_RETRY_ATTEMPTS=3
 ```
 
-If the value is unset, OpenWiki defaults to 3 retries.
+If the value is unset, ArgusWiki defaults to 3 retries.
 
 ### Alternative base URLs
 
@@ -124,14 +124,14 @@ is missing). This is useful for OpenAI-compatible LLM endpoints such as those
 exposed by a LiteLLM gateway, which lets you reach whatever upstream providers
 the gateway fronts through a single OpenAI-shaped API.
 Because the provider has no preset model
-list, set `OPENWIKI_MODEL_ID` (or pick "custom model ID" in setup) to whatever
+list, set `ARGUSWIKI_MODEL_ID` (or pick "custom model ID" in setup) to whatever
 name the gateway exposes.
 
 ```bash
-OPENWIKI_PROVIDER=openai-compatible
+ARGUSWIKI_PROVIDER=openai-compatible
 OPENAI_COMPATIBLE_API_KEY=<gateway key>
 OPENAI_COMPATIBLE_BASE_URL=https://<gateway>/v1
-OPENWIKI_MODEL_ID=<model name the gateway exposes>
+ARGUSWIKI_MODEL_ID=<model name the gateway exposes>
 ```
 
 Base URLs are resolved by `resolveProviderBaseUrl()` in `src/constants.ts`, which
@@ -149,7 +149,7 @@ workload identity). `GOOGLE_CLOUD_PROJECT` is required;
 `resolveProviderLocation()` in `src/constants.ts`).
 
 ```bash
-OPENWIKI_PROVIDER=vertex
+ARGUSWIKI_PROVIDER=vertex
 GOOGLE_CLOUD_PROJECT=<gcp project id>
 GOOGLE_CLOUD_LOCATION=global   # optional
 ```
@@ -170,7 +170,7 @@ The help content is centralized in `src/commands.ts` and is used by the CLI UI. 
 - Update parser behavior in `src/commands.ts` first.
 - Then update any user-visible text in `src/cli.tsx` and `README.md`.
 - If new options affect run behavior, make sure `src/agent/index.ts` and `src/credentials.tsx` still receive the right inputs.
-- If adding a provider, update `PROVIDER_CONFIGS` and `SELECTABLE_OPENWIKI_PROVIDERS` in `src/constants.ts`, `managedEnvKeys` in `src/env.ts`, and the `createModel` branch in `src/agent/index.ts`. OAuth-based providers (like `openai-chatgpt`) additionally need a token refresh flow and a dedicated branch in `createModel` that reads tokens from `process.env`. `apiKeyEnvKey` is optional — a provider without one (like `vertex`) instead declares the env keys it needs (e.g. `projectEnvKey`), and `getMissingProviderEnvKey()` gates runs on whichever required key is absent.
+- If adding a provider, update `PROVIDER_CONFIGS` and `SELECTABLE_ARGUSWIKI_PROVIDERS` in `src/constants.ts`, `managedEnvKeys` in `src/env.ts`, and the `createModel` branch in `src/agent/index.ts`. OAuth-based providers (like `openai-chatgpt`) additionally need a token refresh flow and a dedicated branch in `createModel` that reads tokens from `process.env`. `apiKeyEnvKey` is optional — a provider without one (like `vertex`) instead declares the env keys it needs (e.g. `projectEnvKey`), and `getMissingProviderEnvKey()` gates runs on whichever required key is absent.
 - To let a provider accept an alternative base URL, set `baseUrlEnvKey` on its `PROVIDER_CONFIGS` entry, add that key to `managedEnvKeys` in `src/env.ts`, and read it through `resolveProviderBaseUrl()` in the provider's `createModel` branch.
 - To require a user-supplied base URL (a provider with no default endpoint, like `openai-compatible`), also set `requiresBaseUrl: true`. `ensureProviderBaseUrl()` in `src/agent/index.ts` enforces it at runtime, and the interactive setup adds a base-URL step for such providers.
 - Re-check the `package.json` bin entry and scripts if the entrypoint changes.
