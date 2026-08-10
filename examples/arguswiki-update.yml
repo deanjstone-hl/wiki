@@ -25,11 +25,11 @@ jobs:
           node-version: "22"
 
       - name: Install ArgusWiki
-        run: npm install --global openwiki
+        run: npm install --global arguswiki
 
       - name: Run ArgusWiki
         # --update also handles the first run for code docs when env vars are set.
-        run: openwiki code --update --print
+        run: arguswiki code --update --print
         env:
           ARGUSWIKI_PROVIDER: claude-cli
 

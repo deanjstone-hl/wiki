@@ -13,19 +13,19 @@ ArgusWiki is a CLI that writes and maintains agent wikis for codebases or purpos
 ## Install
 
 ```sh
-npm install -g openwiki
+npm install -g arguswiki
 ```
 
 On Windows, prefer installing ArgusWiki with Node.js package managers such as
 `npm` or `pnpm`:
 
 ```sh
-npm install -g openwiki
+npm install -g arguswiki
 # or
-pnpm add -g openwiki
+pnpm add -g arguswiki
 ```
 
-`bun install -g openwiki` can fall back to compiling ArgusWiki's `better-sqlite3`
+`bun install -g arguswiki` can fall back to compiling ArgusWiki's `better-sqlite3`
 checkpointing dependency. Before using that path, install Visual Studio Build
 Tools with the Desktop development with C++ workload. Bun does not run lifecycle
 scripts from installed packages by default, so it cannot display a package-level
@@ -36,7 +36,7 @@ warning before that native dependency build starts.
 Initialize ArgusWiki in code mode, configure your model and API key, then generate documentation:
 
 ```sh
-openwiki --init
+arguswiki --init
 ```
 
 ArgusWiki has two modes:
@@ -47,8 +47,8 @@ ArgusWiki has two modes:
 - **Code mode** builds repository documentation in `arguswiki/` for the current
   codebase.
 
-Bare `openwiki --init` and `openwiki --update` run in code mode. Use
-`openwiki personal --init` or `openwiki personal --update` for the local
+Bare `arguswiki --init` and `arguswiki --update` run in code mode. Use
+`arguswiki personal --init` or `arguswiki personal --update` for the local
 personal brain wiki.
 
 Then to ensure your documentation stays up-to-date, add the CI workflow for your Git provider to automatically open a PR or merge request with documentation updates:
@@ -56,7 +56,7 @@ Then to ensure your documentation stays up-to-date, add the CI workflow for your
 - GitHub Actions: copy [arguswiki-update.yml](./examples/arguswiki-update.yml) into `.github/workflows/arguswiki-update.yml`.
 
 For repository documentation in GitHub Actions, use
-`openwiki code --update --print`. You do not need to run `--init` in CI:
+`arguswiki code --update --print`. You do not need to run `--init` in CI:
 `--update` will create the initial `arguswiki/` docs if they do not exist yet, as
 long as the workflow provides the required provider and model environment
 variables.
@@ -66,61 +66,61 @@ variables.
 Start the interactive CLI in code mode for the current repository:
 
 ```sh
-openwiki
+arguswiki
 ```
 
 Start ArgusWiki with an initial request:
 
 ```sh
-openwiki "Please generate documentation for this repository"
+arguswiki "Please generate documentation for this repository"
 ```
 
 Start the interactive local personal brain instead:
 
 ```sh
-openwiki personal
+arguswiki personal
 ```
 
 Run a single command and exit:
 
 ```sh
-openwiki -p "Summarize what you can do"
+arguswiki -p "Summarize what you can do"
 ```
 
 Initialize ArgusWiki:
 
 ```sh
-openwiki --init
+arguswiki --init
 ```
 
 Initialize the local personal brain wiki:
 
 ```sh
-openwiki personal --init
+arguswiki personal --init
 ```
 
 Update repository code documentation:
 
 ```sh
-openwiki --update
+arguswiki --update
 ```
 
 Update the local personal brain wiki:
 
 ```sh
-openwiki personal --update
+arguswiki personal --update
 ```
 
 Run an update that can ingest configured local connectors first:
 
 ```sh
-openwiki personal --update "Refresh the wiki from configured connectors"
+arguswiki personal --update "Refresh the wiki from configured connectors"
 ```
 
 Show help:
 
 ```sh
-openwiki --help
+arguswiki --help
 ```
 
 In chat, use `/api-key` to update the current provider API key and
@@ -130,31 +130,31 @@ use masked prompts.
 Authenticate a connector provider:
 
 ```sh
-openwiki auth slack
-openwiki auth gmail
-openwiki auth x
-openwiki auth notion
+arguswiki auth slack
+arguswiki auth gmail
+arguswiki auth x
+arguswiki auth notion
 ```
 
 Start an ngrok tunnel for Slack OAuth:
 
 ```sh
-openwiki ngrok start
+arguswiki ngrok start
 ```
 
 This starts ngrok with a random HTTPS forwarding URL. ArgusWiki reads ngrok's
 local inspection API, appends `/callback`, and saves
 `ARGUSWIKI_HTTPS_OAUTH_REDIRECT_URI` automatically. Register the printed callback
 URL in Slack. If you have a fixed ngrok domain, run
-`openwiki ngrok start https://<your-ngrok-domain>`. X/Twitter and Gmail auth
+`arguswiki ngrok start https://<your-ngrok-domain>`. X/Twitter and Gmail auth
 ignore that HTTPS override and keep using the local loopback callback,
 `http://127.0.0.1:53682/callback`.
 
-Bare `openwiki` runs in code mode for the current repository. It creates initial repository documentation in `arguswiki/` when no wiki exists. Use `openwiki personal` for the local general-purpose wiki in `~/.arguswiki/wiki/`. By default, the CLI stays open after each run so you can send follow-up messages. Use `-p` or `--print` for a one-shot non-interactive run that prints the final assistant output.
+Bare `arguswiki` runs in code mode for the current repository. It creates initial repository documentation in `arguswiki/` when no wiki exists. Use `arguswiki personal` for the local general-purpose wiki in `~/.arguswiki/wiki/`. By default, the CLI stays open after each run so you can send follow-up messages. Use `-p` or `--print` for a one-shot non-interactive run that prints the final assistant output.
 
-Bare `openwiki --init` and `openwiki --update` default to code mode and operate on repository documentation. Use the `personal` positional mode or `--mode personal` to initialize or update the local personal brain wiki.
+Bare `arguswiki --init` and `arguswiki --update` default to code mode and operate on repository documentation. Use the `personal` positional mode or `--mode personal` to initialize or update the local personal brain wiki.
 
-On each `code` run, `openwiki` maintains both an `AGENTS.md` and a `CLAUDE.md` at the repository root, adding prompting that instructs your coding agent to reference the wiki when searching for context. Each file is created if it does not already exist. If a file is present, ArgusWiki only rewrites its own `<!-- ARGUSWIKI:START -->…<!-- ARGUSWIKI:END -->` block and leaves the rest of your content untouched (appending the block the first time). The scheduled GitHub Actions workflow includes these files, along with the workflow itself, in the documentation pull request.
+On each `code` run, `arguswiki` maintains both an `AGENTS.md` and a `CLAUDE.md` at the repository root, adding prompting that instructs your coding agent to reference the wiki when searching for context. Each file is created if it does not already exist. If a file is present, ArgusWiki only rewrites its own `<!-- ARGUSWIKI:START -->…<!-- ARGUSWIKI:END -->` block and leaves the rest of your content untouched (appending the block the first time). The scheduled GitHub Actions workflow includes these files, along with the workflow itself, in the documentation pull request.
 
 Repository-specific wiki instructions are stored separately in
 `arguswiki/INSTRUCTIONS.md`. This file is a shared, user-authored brief for the
@@ -173,9 +173,9 @@ ArgusWiki's first-run onboarding offers connector setup for local Git repositori
 You can configure the same connector more than once. For example, add one Web
 Search source for AI research and another for NBA news; ArgusWiki stores them as
 separate source instances such as `web-search-1` and `web-search-2`. Run all
-instances with `openwiki ingest all`, all instances for one connector with
-`openwiki ingest web-search`, or one instance with
-`openwiki ingest web-search-2`.
+instances with `arguswiki ingest all`, all instances for one connector with
+`arguswiki ingest web-search`, or one instance with
+`arguswiki ingest web-search-2`.
 
 - `git-repo` reads configured local repository paths and writes compact manifests.
 - `x` uses the X API directly with OAuth user-context credentials for home timeline, user posts, mentions, bookmarks, and list posts.
@@ -186,9 +186,9 @@ instances with `openwiki ingest all`, all instances for one connector with
 
 Connector secrets are referenced by env var name and stored in `~/.arguswiki/.env`; connector config files should never contain raw secret values.
 
-`openwiki auth <provider>` runs a local browser OAuth flow, saves returned tokens into `~/.arguswiki/.env`, creates connector config when possible, and discovers MCP tools for MCP-backed providers. Slack and Gmail require app client credentials to already be set in that file; Notion uses dynamic client registration for hosted MCP; X uses OAuth 2.0 with PKCE. After `openwiki auth gmail`, the Google connector can ingest Gmail directly with no MCP transport setup.
+`arguswiki auth <provider>` runs a local browser OAuth flow, saves returned tokens into `~/.arguswiki/.env`, creates connector config when possible, and discovers MCP tools for MCP-backed providers. Slack and Gmail require app client credentials to already be set in that file; Notion uses dynamic client registration for hosted MCP; X uses OAuth 2.0 with PKCE. After `arguswiki auth gmail`, the Google connector can ingest Gmail directly with no MCP transport setup.
 
-`openwiki auth configure <provider>` and `openwiki auth tools <provider>` are advanced/retry commands for regenerating connector config or inspecting live MCP tools.
+`arguswiki auth configure <provider>` and `arguswiki auth tools <provider>` are advanced/retry commands for regenerating connector config or inspecting live MCP tools.
 
 First-run onboarding also lets users choose a wiki template, customize its scope,
 and save per-source ingestion notes and source schedules in
@@ -268,9 +268,9 @@ Instead of pasting an API key, run the setup wizard and complete a browser
 login:
 
 ```bash
-ARGUSWIKI_PROVIDER=openai-chatgpt openwiki code --init
+ARGUSWIKI_PROVIDER=openai-chatgpt arguswiki code --init
 # or
-ARGUSWIKI_PROVIDER=openai-chatgpt openwiki personal --init
+ARGUSWIKI_PROVIDER=openai-chatgpt arguswiki personal --init
 ```
 
 The wizard opens `https://auth.openai.com` in your browser (and also prints the

@@ -1,14 +1,14 @@
 {
   "name": "@argus/wiki",
   "version": "2.0.0",
-  "description": "A CLI that uses a DeepAgents documentation agent to generate and maintain an OpenWiki for a codebase.",
+  "description": "A CLI that uses a DeepAgents documentation agent to generate and maintain an ArgusWiki for a codebase.",
   "license": "MIT",
   "type": "module",
   "engines": {
     "node": ">=22"
   },
   "bin": {
-    "openwiki": "./dist/cli.js"
+    "arguswiki": "./dist/cli.js"
   },
   "files": [
     "dist",
@@ -26,7 +26,7 @@
     "cli"
   ],
   "scripts": {
-    "openwiki": "node dist/cli.js",
+    "arguswiki": "node dist/cli.js",
     "build": "tsc -p tsconfig.json",
     "clean": "node -e \"require('fs').rmSync('dist', { recursive: true, force: true })\"",
     "coverage": "vitest run --coverage",

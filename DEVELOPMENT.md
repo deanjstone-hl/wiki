@@ -28,17 +28,17 @@ Run a dry test from the repo you want ArgusWiki to inspect:
 
 ```sh
 cd /path/to/target/repo
-ARGUSWIKI_DEV=1 openwiki --dry-run
+ARGUSWIKI_DEV=1 arguswiki --dry-run
 ```
 
 Run the real CLI from the target repo:
 
 ```sh
 cd /path/to/target/repo
-openwiki
-openwiki -p "Summarize what you can do"
-openwiki --modelId openai/gpt-5.5
-openwiki "Please focus on API documentation"
+arguswiki
+arguswiki -p "Summarize what you can do"
+arguswiki --modelId openai/gpt-5.5
+arguswiki "Please focus on API documentation"
 ```
 
 The target repo is still the current working directory. The global link only
@@ -47,7 +47,7 @@ avoids typing the path to `dist/cli.js`.
 If you do not want to configure pnpm globals, use a shell alias instead:
 
 ```sh
-alias openwiki='node /path/to/arguswiki/dist/cli.js'
+alias arguswiki='node /path/to/arguswiki/dist/cli.js'
 ```
 
 That alias can go in `~/.zshrc` if you want it to persist.
