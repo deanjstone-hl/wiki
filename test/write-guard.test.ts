@@ -7,8 +7,8 @@ describe("evaluateWritePath", () => {
   test("allows writes inside the allowed directory", () => {
     const decision = evaluateWritePath({
       repoRoot,
-      allowedRelativeDir: "openwiki",
-      filePath: "/home/deanj/repos/argus-wiki/openwiki/architecture.md",
+      allowedRelativeDir: "arguswiki",
+      filePath: "/home/deanj/repos/argus-wiki/arguswiki/architecture.md",
     });
     expect(decision).toEqual({ allowed: true });
   });
@@ -16,8 +16,8 @@ describe("evaluateWritePath", () => {
   test("allows writes at the allowed directory root itself", () => {
     const decision = evaluateWritePath({
       repoRoot,
-      allowedRelativeDir: "openwiki",
-      filePath: "/home/deanj/repos/argus-wiki/openwiki",
+      allowedRelativeDir: "arguswiki",
+      filePath: "/home/deanj/repos/argus-wiki/arguswiki",
     });
     expect(decision.allowed).toBe(true);
   });
@@ -25,7 +25,7 @@ describe("evaluateWritePath", () => {
   test("refuses writes elsewhere in the repo", () => {
     const decision = evaluateWritePath({
       repoRoot,
-      allowedRelativeDir: "openwiki",
+      allowedRelativeDir: "arguswiki",
       filePath: "/home/deanj/repos/argus-wiki/AGENTS.md",
     });
     expect(decision.allowed).toBe(false);
@@ -35,8 +35,8 @@ describe("evaluateWritePath", () => {
   test("refuses a sibling directory that merely shares a prefix", () => {
     const decision = evaluateWritePath({
       repoRoot,
-      allowedRelativeDir: "openwiki",
-      filePath: "/home/deanj/repos/argus-wiki/openwiki-fake/notes.md",
+      allowedRelativeDir: "arguswiki",
+      filePath: "/home/deanj/repos/argus-wiki/arguswiki-fake/notes.md",
     });
     expect(decision.allowed).toBe(false);
   });
@@ -44,7 +44,7 @@ describe("evaluateWritePath", () => {
   test("refuses writes outside the repository entirely", () => {
     const decision = evaluateWritePath({
       repoRoot,
-      allowedRelativeDir: "openwiki",
+      allowedRelativeDir: "arguswiki",
       filePath: "/etc/passwd",
     });
     expect(decision.allowed).toBe(false);
@@ -54,8 +54,8 @@ describe("evaluateWritePath", () => {
   test("refuses path traversal back out of the allowed directory", () => {
     const decision = evaluateWritePath({
       repoRoot,
-      allowedRelativeDir: "openwiki",
-      filePath: "/home/deanj/repos/argus-wiki/openwiki/../../../etc/passwd",
+      allowedRelativeDir: "arguswiki",
+      filePath: "/home/deanj/repos/argus-wiki/arguswiki/../../../etc/passwd",
     });
     expect(decision.allowed).toBe(false);
   });
@@ -63,9 +63,9 @@ describe("evaluateWritePath", () => {
   test("resolves relative file paths against the hook's reported cwd", () => {
     const decision = evaluateWritePath({
       repoRoot,
-      allowedRelativeDir: "openwiki",
+      allowedRelativeDir: "arguswiki",
       filePath: "architecture.md",
-      cwd: "/home/deanj/repos/argus-wiki/openwiki",
+      cwd: "/home/deanj/repos/argus-wiki/arguswiki",
     });
     expect(decision.allowed).toBe(true);
   });
@@ -73,7 +73,7 @@ describe("evaluateWritePath", () => {
   test("refuses an empty file path", () => {
     const decision = evaluateWritePath({
       repoRoot,
-      allowedRelativeDir: "openwiki",
+      allowedRelativeDir: "arguswiki",
       filePath: "",
     });
     expect(decision.allowed).toBe(false);

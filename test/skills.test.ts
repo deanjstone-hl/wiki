@@ -13,7 +13,7 @@ import { replaceSkillDirectories } from "../src/agent/skills.ts";
 
 describe("replaceSkillDirectories", () => {
   test("overwrites bundled skills and preserves unrelated skills", async () => {
-    const root = await mkdtemp(path.join(os.tmpdir(), "openwiki-skills-"));
+    const root = await mkdtemp(path.join(os.tmpdir(), "arguswiki-skills-"));
     const source = path.join(root, "source");
     const target = path.join(root, "target");
 

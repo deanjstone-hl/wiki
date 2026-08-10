@@ -3,8 +3,8 @@ import { formatEnv, MANAGED_ENV_KEYS, parseEnv } from "../src/env.ts";
 
 describe("parseEnv", () => {
   test("parses simple KEY=value lines", () => {
-    expect(parseEnv("OPENWIKI_PROVIDER=anthropic\n")).toEqual({
-      OPENWIKI_PROVIDER: "anthropic",
+    expect(parseEnv("ARGUSWIKI_PROVIDER=anthropic\n")).toEqual({
+      ARGUSWIKI_PROVIDER: "anthropic",
     });
   });
 
@@ -37,8 +37,8 @@ describe("parseEnv", () => {
   });
 
   test("leaves unquoted values as-is", () => {
-    expect(parseEnv("OPENWIKI_MODEL_ID=gpt-5.5\n")).toEqual({
-      OPENWIKI_MODEL_ID: "gpt-5.5",
+    expect(parseEnv("ARGUSWIKI_MODEL_ID=gpt-5.5\n")).toEqual({
+      ARGUSWIKI_MODEL_ID: "gpt-5.5",
     });
   });
 
@@ -74,8 +74,8 @@ describe("formatEnv", () => {
       ZZZ_CUSTOM: "z",
       AAA_CUSTOM: "a",
       NEBIUS_API_KEY: "n",
-      OPENWIKI_PROVIDER_RETRY_ATTEMPTS: "3",
-      OPENWIKI_PROVIDER: "anthropic",
+      ARGUSWIKI_PROVIDER_RETRY_ATTEMPTS: "3",
+      ARGUSWIKI_PROVIDER: "anthropic",
       GOOGLE_CLOUD_PROJECT: "proj",
       ANTHROPIC_API_KEY: "k",
     });
@@ -91,8 +91,8 @@ describe("formatEnv", () => {
       "NEBIUS_API_KEY",
       "ANTHROPIC_API_KEY",
       "GOOGLE_CLOUD_PROJECT",
-      "OPENWIKI_PROVIDER",
-      "OPENWIKI_PROVIDER_RETRY_ATTEMPTS",
+      "ARGUSWIKI_PROVIDER",
+      "ARGUSWIKI_PROVIDER_RETRY_ATTEMPTS",
       "AAA_CUSTOM",
       "ZZZ_CUSTOM",
     ]);
@@ -116,7 +116,7 @@ describe("parseEnv <-> formatEnv round-trip", () => {
     const original = {
       OPENAI_API_KEY: 'weird "value" with\nnewline and \\ backslash',
       ANTHROPIC_BASE_URL: "https://gateway.example/anthropic",
-      OPENWIKI_MODEL_ID: "claude-opus-4-8",
+      ARGUSWIKI_MODEL_ID: "claude-opus-4-8",
     };
 
     expect(parseEnv(formatEnv(original))).toEqual(original);

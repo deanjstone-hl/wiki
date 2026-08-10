@@ -4,7 +4,7 @@ import path from "node:path";
 import { afterEach, describe, expect, test, vi } from "vitest";
 
 // The gmail, slack, and x connectors read their on-disk config from
-// `~/.openwiki/connectors/<id>/config.json` (a path derived from
+// `~/.arguswiki/connectors/<id>/config.json` (a path derived from
 // `os.homedir()`, which honors $HOME). These tests point $HOME at a throwaway
 // temp dir and write a config file there, so we can assert that per-instance
 // `options.connectorConfig` overrides are merged on top of the on-disk config
@@ -20,13 +20,13 @@ const originalHome = process.env.HOME;
 const tempHomes: string[] = [];
 
 const CONNECTOR_ENV_KEYS = [
-  "OPENWIKI_X_ACCESS_TOKEN",
-  "OPENWIKI_SLACK_USER_TOKEN",
+  "ARGUSWIKI_X_ACCESS_TOKEN",
+  "ARGUSWIKI_SLACK_USER_TOKEN",
 ] as const;
 const savedEnv: Record<string, string | undefined> = {};
 
 async function createTempHome(): Promise<string> {
-  const home = await mkdtemp(path.join(tmpdir(), "openwiki-connector-config-"));
+  const home = await mkdtemp(path.join(tmpdir(), "arguswiki-connector-config-"));
   tempHomes.push(home);
   return home;
 }
@@ -36,7 +36,7 @@ async function writeConnectorConfig(
   connectorId: string,
   config: unknown,
 ): Promise<void> {
-  const dir = path.join(home, ".openwiki", "connectors", connectorId);
+  const dir = path.join(home, ".arguswiki", "connectors", connectorId);
   await mkdir(dir, { recursive: true });
   await writeFile(
     path.join(dir, "config.json"),
@@ -125,7 +125,7 @@ describe("x connector honors options.connectorConfig", () => {
     // Merge honored: enabled gate passed, so it stops at the missing-token gate.
     // If the override were ignored (the bug), status would still be "skipped".
     expect(result.status).toBe("error");
-    expect(result.message).toContain("OPENWIKI_X_ACCESS_TOKEN");
+    expect(result.message).toContain("ARGUSWIKI_X_ACCESS_TOKEN");
   });
 });
 
@@ -150,7 +150,7 @@ describe("slack connector honors options.connectorConfig", () => {
     });
 
     expect(result.status).toBe("error");
-    expect(result.message).toContain("OPENWIKI_SLACK_USER_TOKEN");
+    expect(result.message).toContain("ARGUSWIKI_SLACK_USER_TOKEN");
   });
 });
 

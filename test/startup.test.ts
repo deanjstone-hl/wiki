@@ -15,15 +15,15 @@ async function git(cwd: string, args: string[]): Promise<string> {
   return stdout.trim();
 }
 
-async function createRepoWithOpenWiki(): Promise<string> {
-  const repo = await mkdtemp(path.join(tmpdir(), "openwiki-startup-"));
+async function createRepoWithArgusWiki(): Promise<string> {
+  const repo = await mkdtemp(path.join(tmpdir(), "arguswiki-startup-"));
   await git(repo, ["init"]);
   await git(repo, ["config", "user.email", "test@example.com"]);
-  await git(repo, ["config", "user.name", "OpenWiki Test"]);
+  await git(repo, ["config", "user.name", "ArgusWiki Test"]);
   await writeFile(path.join(repo, "README.md"), "# Test Repo\n", "utf8");
-  await mkdir(path.join(repo, "openwiki"));
+  await mkdir(path.join(repo, "arguswiki"));
   await writeFile(
-    path.join(repo, "openwiki", "quickstart.md"),
+    path.join(repo, "arguswiki", "quickstart.md"),
     "# Quickstart\n",
     "utf8",
   );
@@ -34,7 +34,7 @@ async function createRepoWithOpenWiki(): Promise<string> {
 
 async function writeLastUpdate(repo: string, gitHead: string): Promise<void> {
   await writeFile(
-    path.join(repo, "openwiki", ".last-update.json"),
+    path.join(repo, "arguswiki", ".last-update.json"),
     `${JSON.stringify({
       updatedAt: new Date().toISOString(),
       command: "update",
@@ -84,7 +84,7 @@ describe("resolveStartupCommand", () => {
   });
 
   test("allows clean update --print no-ops without provider credentials", async () => {
-    const repo = await createRepoWithOpenWiki();
+    const repo = await createRepoWithArgusWiki();
     const head = await git(repo, ["rev-parse", "HEAD"]);
     await writeLastUpdate(repo, head);
 
@@ -103,10 +103,10 @@ describe("resolveStartupCommand", () => {
   // resolveStartupCommand fails with a missing-credential error. The former
   // "still requires credentials when ..." tests here (pinned to
   // OPENROUTER_API_KEY) were removed as a necessary consequence of narrowing
-  // OpenWikiProvider to "claude-cli" only.
+  // ArgusWikiProvider to "claude-cli" only.
 
   test("runs update --print with source changes (claude-cli needs no credentials)", async () => {
-    const repo = await createRepoWithOpenWiki();
+    const repo = await createRepoWithArgusWiki();
     const head = await git(repo, ["rev-parse", "HEAD"]);
     await writeLastUpdate(repo, head);
     await writeFile(
@@ -125,7 +125,7 @@ describe("resolveStartupCommand", () => {
   });
 
   test("runs update --print with a user message (claude-cli needs no credentials)", async () => {
-    const repo = await createRepoWithOpenWiki();
+    const repo = await createRepoWithArgusWiki();
     const head = await git(repo, ["rev-parse", "HEAD"]);
     await writeLastUpdate(repo, head);
 

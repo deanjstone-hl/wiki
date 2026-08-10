@@ -4,14 +4,14 @@ import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import { createCallbackServer } from "../src/auth/oauth.ts";
 import { getAuthProvider } from "../src/auth/providers.ts";
 
-// `createCallbackServer` backs `openwiki auth <provider>`: it captures the
+// `createCallbackServer` backs `arguswiki auth <provider>`: it captures the
 // OAuth redirect on a loopback HTTP server, then the server is closed while
 // the browser may still be sending follow-up requests (such as a favicon
 // fetch). A request that finishes parsing after close() has started used to
 // crash the whole CLI, because the handler read `server.address().port` and
 // `server.address()` returns null once the server stops listening.
 
-const CALLBACK_PORT_ENV_KEY = "OPENWIKI_OAUTH_CALLBACK_PORT";
+const CALLBACK_PORT_ENV_KEY = "ARGUSWIKI_OAUTH_CALLBACK_PORT";
 
 let originalCallbackPort: string | undefined;
 let port: number;

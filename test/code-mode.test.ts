@@ -4,13 +4,13 @@ import path from "node:path";
 import { afterEach, describe, expect, test } from "vitest";
 import { ensureCodeModeRepoSetup } from "../src/code-mode.ts";
 
-const SNIPPET_START = "<!-- OPENWIKI:START -->";
-const SNIPPET_END = "<!-- OPENWIKI:END -->";
+const SNIPPET_START = "<!-- ARGUSWIKI:START -->";
+const SNIPPET_END = "<!-- ARGUSWIKI:END -->";
 
 const tempRepos: string[] = [];
 
 async function createTempRepo(): Promise<string> {
-  const repo = await mkdtemp(path.join(tmpdir(), "openwiki-code-mode-"));
+  const repo = await mkdtemp(path.join(tmpdir(), "arguswiki-code-mode-"));
   tempRepos.push(repo);
   return repo;
 }
@@ -42,18 +42,18 @@ describe("ensureCodeModeRepoSetup agent files", () => {
       expect(content, `${fileName} should be created`).not.toBeNull();
       expect(content).toContain(SNIPPET_START);
       expect(content).toContain(SNIPPET_END);
-      expect(content).toContain("## OpenWiki");
+      expect(content).toContain("## ArgusWiki");
     }
   });
 
-  test("refreshes the OpenWiki block in place and preserves surrounding content", async () => {
+  test("refreshes the ArgusWiki block in place and preserves surrounding content", async () => {
     const repo = await createTempRepo();
     const existing = `# My Project
 
 Hand-written guidance for coding agents.
 
 ${SNIPPET_START}
-stale OpenWiki content
+stale ArgusWiki content
 ${SNIPPET_END}
 
 Trailing notes that must survive.
@@ -66,7 +66,7 @@ Trailing notes that must survive.
     expect(content).toContain("# My Project");
     expect(content).toContain("Hand-written guidance for coding agents.");
     expect(content).toContain("Trailing notes that must survive.");
-    expect(content).not.toContain("stale OpenWiki content");
+    expect(content).not.toContain("stale ArgusWiki content");
     // Exactly one managed block after a refresh.
     expect(content?.match(new RegExp(SNIPPET_START, "g"))).toHaveLength(1);
   });
@@ -106,15 +106,15 @@ describe("ensureCodeModeRepoSetup workflow", () => {
     await ensureCodeModeRepoSetup(repo);
 
     const workflow = await readIfPresent(
-      path.join(repo, ".github", "workflows", "openwiki-update.yml"),
+      path.join(repo, ".github", "workflows", "arguswiki-update.yml"),
     );
     expect(workflow).not.toBeNull();
     expect(workflow).toContain("add-paths: |");
     for (const managedPath of [
-      "openwiki",
+      "arguswiki",
       "AGENTS.md",
       "CLAUDE.md",
-      ".github/workflows/openwiki-update.yml",
+      ".github/workflows/arguswiki-update.yml",
     ]) {
       expect(workflow).toContain(managedPath);
     }
@@ -126,7 +126,7 @@ describe("ensureCodeModeRepoSetup workflow", () => {
     await ensureCodeModeRepoSetup(repo);
 
     const workflow = await readIfPresent(
-      path.join(repo, ".github", "workflows", "openwiki-update.yml"),
+      path.join(repo, ".github", "workflows", "arguswiki-update.yml"),
     );
     expect(workflow).not.toBeNull();
   });
@@ -137,9 +137,9 @@ describe("ensureCodeModeRepoSetup workflow", () => {
       repo,
       ".github",
       "workflows",
-      "openwiki-update.yml",
+      "arguswiki-update.yml",
     );
-    const customized = "name: Custom OpenWiki Update\nruns-on: [self-hosted]\n";
+    const customized = "name: Custom ArgusWiki Update\nruns-on: [self-hosted]\n";
     await mkdir(path.dirname(workflowPath), { recursive: true });
     await writeFile(workflowPath, customized, "utf8");
 
@@ -155,7 +155,7 @@ describe("ensureCodeModeRepoSetup workflow", () => {
     await ensureCodeModeRepoSetup(repo);
 
     const workflow = await readIfPresent(
-      path.join(repo, ".github", "workflows", "openwiki-update.yml"),
+      path.join(repo, ".github", "workflows", "arguswiki-update.yml"),
     );
     expect(workflow).toContain("Classify update as structural or routine");
     expect(workflow).toContain("classification=structural");
@@ -163,7 +163,7 @@ describe("ensureCodeModeRepoSetup workflow", () => {
     expect(workflow).toContain("gh pr merge --auto --squash");
     // The workflow file itself must never be silently auto-merged.
     expect(workflow).toMatch(
-      /workflows\/openwiki-update\.yml[\s\S]*classification=structural/,
+      /workflows\/arguswiki-update\.yml[\s\S]*classification=structural/,
     );
   });
 });

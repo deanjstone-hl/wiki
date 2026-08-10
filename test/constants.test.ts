@@ -80,8 +80,8 @@ describe("normalizeProvider / isValidProvider", () => {
 });
 
 describe("resolveConfiguredProvider", () => {
-  test("honors an explicit OPENWIKI_PROVIDER", () => {
-    expect(resolveConfiguredProvider({ OPENWIKI_PROVIDER: "claude-cli" })).toBe(
+  test("honors an explicit ARGUSWIKI_PROVIDER", () => {
+    expect(resolveConfiguredProvider({ ARGUSWIKI_PROVIDER: "claude-cli" })).toBe(
       "claude-cli",
     );
   });
@@ -90,8 +90,8 @@ describe("resolveConfiguredProvider", () => {
     expect(resolveConfiguredProvider({})).toBe(DEFAULT_PROVIDER);
   });
 
-  test("ignores an invalid OPENWIKI_PROVIDER value", () => {
-    expect(resolveConfiguredProvider({ OPENWIKI_PROVIDER: "bogus" })).toBe(
+  test("ignores an invalid ARGUSWIKI_PROVIDER value", () => {
+    expect(resolveConfiguredProvider({ ARGUSWIKI_PROVIDER: "bogus" })).toBe(
       DEFAULT_PROVIDER,
     );
   });
@@ -104,7 +104,7 @@ describe("resolveProviderBaseUrl", () => {
 });
 
 describe("resolveProviderRetryAttempts", () => {
-  test("uses the OpenWiki default when no override is set", () => {
+  test("uses the ArgusWiki default when no override is set", () => {
     expect(resolveProviderRetryAttempts({})).toBe(
       DEFAULT_PROVIDER_RETRY_ATTEMPTS,
     );
@@ -113,12 +113,12 @@ describe("resolveProviderRetryAttempts", () => {
   test("accepts positive integer retry counts", () => {
     expect(
       resolveProviderRetryAttempts({
-        OPENWIKI_PROVIDER_RETRY_ATTEMPTS: "1",
+        ARGUSWIKI_PROVIDER_RETRY_ATTEMPTS: "1",
       }),
     ).toBe(1);
     expect(
       resolveProviderRetryAttempts({
-        OPENWIKI_PROVIDER_RETRY_ATTEMPTS: " 3 ",
+        ARGUSWIKI_PROVIDER_RETRY_ATTEMPTS: " 3 ",
       }),
     ).toBe(3);
   });
@@ -127,9 +127,9 @@ describe("resolveProviderRetryAttempts", () => {
     for (const value of ["", "   ", "0", "-1", "1.5", "abc", "1e2"]) {
       expect(() =>
         resolveProviderRetryAttempts({
-          OPENWIKI_PROVIDER_RETRY_ATTEMPTS: value,
+          ARGUSWIKI_PROVIDER_RETRY_ATTEMPTS: value,
         }),
-      ).toThrow(/OPENWIKI_PROVIDER_RETRY_ATTEMPTS/u);
+      ).toThrow(/ARGUSWIKI_PROVIDER_RETRY_ATTEMPTS/u);
     }
   });
 });

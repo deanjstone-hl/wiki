@@ -3,12 +3,12 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, test } from "vitest";
 import {
-  createOpenWikiContentSnapshot,
+  createArgusWikiContentSnapshot,
   persistRunMetadataIfChanged,
 } from "../src/agent/utils.ts";
 
 async function createTempRepo(): Promise<string> {
-  return mkdtemp(path.join(tmpdir(), "openwiki-run-metadata-"));
+  return mkdtemp(path.join(tmpdir(), "arguswiki-run-metadata-"));
 }
 
 async function readMetadata(
@@ -27,13 +27,13 @@ async function readMetadata(
 describe("persistRunMetadataIfChanged", () => {
   test("writes metadata when wiki content changed since the snapshot", async () => {
     const cwd = await createTempRepo();
-    const snapshotBefore = await createOpenWikiContentSnapshot(
+    const snapshotBefore = await createArgusWikiContentSnapshot(
       cwd,
       "repository",
     );
 
-    await mkdir(path.join(cwd, "openwiki"), { recursive: true });
-    await writeFile(path.join(cwd, "openwiki", "index.md"), "# Docs\n", "utf8");
+    await mkdir(path.join(cwd, "arguswiki"), { recursive: true });
+    await writeFile(path.join(cwd, "arguswiki", "index.md"), "# Docs\n", "utf8");
 
     const written = await persistRunMetadataIfChanged(
       "init",
@@ -44,7 +44,7 @@ describe("persistRunMetadataIfChanged", () => {
     );
 
     expect(written).toBe(true);
-    const metadata = await readMetadata(cwd, "openwiki/.last-update.json");
+    const metadata = await readMetadata(cwd, "arguswiki/.last-update.json");
     expect(metadata).not.toBeNull();
     expect(metadata?.command).toBe("init");
     expect(metadata?.model).toBe("test-model");
@@ -52,7 +52,7 @@ describe("persistRunMetadataIfChanged", () => {
 
   test("writes metadata in local-wiki mode when content changed", async () => {
     const cwd = await createTempRepo();
-    const snapshotBefore = await createOpenWikiContentSnapshot(
+    const snapshotBefore = await createArgusWikiContentSnapshot(
       cwd,
       "local-wiki",
     );
@@ -73,7 +73,7 @@ describe("persistRunMetadataIfChanged", () => {
 
   test("skips when wiki content is unchanged", async () => {
     const cwd = await createTempRepo();
-    const snapshotBefore = await createOpenWikiContentSnapshot(
+    const snapshotBefore = await createArgusWikiContentSnapshot(
       cwd,
       "repository",
     );
@@ -87,7 +87,7 @@ describe("persistRunMetadataIfChanged", () => {
     );
 
     expect(written).toBe(false);
-    expect(await readMetadata(cwd, "openwiki/.last-update.json")).toBeNull();
+    expect(await readMetadata(cwd, "arguswiki/.last-update.json")).toBeNull();
   });
 
   test("skips for chat runs", async () => {
@@ -102,6 +102,6 @@ describe("persistRunMetadataIfChanged", () => {
     );
 
     expect(written).toBe(false);
-    expect(await readMetadata(cwd, "openwiki/.last-update.json")).toBeNull();
+    expect(await readMetadata(cwd, "arguswiki/.last-update.json")).toBeNull();
   });
 });

@@ -2,21 +2,21 @@ import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import { parseCommand, shouldRunNonInteractively } from "../src/commands.ts";
 
 // parseCommand's --dry-run gate consults isDevelopmentMode(), which reads
-// NODE_ENV / OPENWIKI_DEV. Pin both to a non-development state per test and
+// NODE_ENV / ARGUSWIKI_DEV. Pin both to a non-development state per test and
 // restore afterward.
 const originalNodeEnv = process.env.NODE_ENV;
-const originalDevFlag = process.env.OPENWIKI_DEV;
+const originalDevFlag = process.env.ARGUSWIKI_DEV;
 
 beforeEach(() => {
   delete process.env.NODE_ENV;
-  delete process.env.OPENWIKI_DEV;
+  delete process.env.ARGUSWIKI_DEV;
 });
 
 afterEach(() => {
   if (originalNodeEnv === undefined) delete process.env.NODE_ENV;
   else process.env.NODE_ENV = originalNodeEnv;
-  if (originalDevFlag === undefined) delete process.env.OPENWIKI_DEV;
-  else process.env.OPENWIKI_DEV = originalDevFlag;
+  if (originalDevFlag === undefined) delete process.env.ARGUSWIKI_DEV;
+  else process.env.ARGUSWIKI_DEV = originalDevFlag;
 });
 
 describe("parseCommand — help", () => {
@@ -311,7 +311,7 @@ describe("parseCommand — unknown options and dry-run gating", () => {
   });
 
   test("--dry-run is accepted in development mode", () => {
-    process.env.OPENWIKI_DEV = "1";
+    process.env.ARGUSWIKI_DEV = "1";
 
     expect(parseCommand(["personal", "--dry-run", "--init"])).toMatchObject({
       kind: "run",
@@ -364,7 +364,7 @@ describe("shouldRunNonInteractively", () => {
   });
 
   test("dry-run, help, and error commands never run non-interactively", () => {
-    process.env.OPENWIKI_DEV = "1";
+    process.env.ARGUSWIKI_DEV = "1";
     expect(
       shouldRunNonInteractively(parseCommand(["--dry-run", "--init"]), false),
     ).toBe(false);

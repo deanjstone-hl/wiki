@@ -4,8 +4,8 @@ import { needsCredentialSetup } from "../src/credentials.tsx";
 const ENV_KEYS = [
   "LANGSMITH_API_KEY",
   "OPENROUTER_API_KEY",
-  "OPENWIKI_MODEL_ID",
-  "OPENWIKI_PROVIDER",
+  "ARGUSWIKI_MODEL_ID",
+  "ARGUSWIKI_PROVIDER",
 ] as const;
 
 const originalEnv = new Map<string, string | undefined>(
@@ -26,9 +26,9 @@ afterEach(() => {
 
 describe("needsCredentialSetup", () => {
   test("requires provider setup for an invalid configured provider", () => {
-    process.env.OPENWIKI_PROVIDER = "bogus";
+    process.env.ARGUSWIKI_PROVIDER = "bogus";
     process.env.OPENROUTER_API_KEY = "sk-or-v1-placeholder";
-    process.env.OPENWIKI_MODEL_ID = "z-ai/glm-5.2";
+    process.env.ARGUSWIKI_MODEL_ID = "z-ai/glm-5.2";
     process.env.LANGSMITH_API_KEY = "lsv2_placeholder";
 
     expect(needsCredentialSetup()).toBe(true);

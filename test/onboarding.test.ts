@@ -7,7 +7,7 @@ const originalHome = process.env.HOME;
 const tempHomes: string[] = [];
 
 async function createTempHome(): Promise<string> {
-  const home = await mkdtemp(path.join(tmpdir(), "openwiki-onboarding-"));
+  const home = await mkdtemp(path.join(tmpdir(), "arguswiki-onboarding-"));
   tempHomes.push(home);
   return home;
 }
@@ -34,12 +34,12 @@ afterEach(async () => {
   );
 });
 
-describe("OpenWiki onboarding instructions", () => {
+describe("ArgusWiki onboarding instructions", () => {
   test("saves wiki instructions to INSTRUCTIONS.md instead of onboarding.json", async () => {
     const home = await createTempHome();
     const onboarding = await loadOnboardingModule(home);
 
-    await onboarding.saveOpenWikiOnboardingConfig({
+    await onboarding.saveArgusWikiOnboardingConfig({
       ingestionSchedule: {
         description: "daily",
         expression: "0 9 * * *",
@@ -52,10 +52,10 @@ describe("OpenWiki onboarding instructions", () => {
     });
 
     const json = JSON.parse(
-      await readFile(onboarding.openWikiOnboardingPath, "utf8"),
+      await readFile(onboarding.argusWikiOnboardingPath, "utf8"),
     ) as Record<string, unknown>;
     const instructions = await readFile(
-      onboarding.openWikiInstructionsPath,
+      onboarding.argusWikiInstructionsPath,
       "utf8",
     );
 
@@ -69,14 +69,14 @@ describe("OpenWiki onboarding instructions", () => {
     const home = await createTempHome();
     const onboarding = await loadOnboardingModule(home);
 
-    await onboarding.saveOpenWikiOnboardingConfig({
+    await onboarding.saveArgusWikiOnboardingConfig({
       sourceInstances: [],
       sources: {},
       version: 1,
       wikiGoal: "Markdown instructions win.",
     });
     await writeFile(
-      onboarding.openWikiOnboardingPath,
+      onboarding.argusWikiOnboardingPath,
       `${JSON.stringify({
         sourceInstances: [],
         sources: {},
@@ -87,20 +87,20 @@ describe("OpenWiki onboarding instructions", () => {
     );
 
     await expect(
-      onboarding.readOpenWikiOnboardingConfig(),
+      onboarding.readArgusWikiOnboardingConfig(),
     ).resolves.toMatchObject({
       wikiGoal: "Markdown instructions win.",
     });
 
-    await rm(onboarding.openWikiInstructionsPath);
+    await rm(onboarding.argusWikiInstructionsPath);
 
-    const config = await onboarding.readOpenWikiOnboardingConfig();
+    const config = await onboarding.readArgusWikiOnboardingConfig();
     expect(config.wikiGoal).toBeUndefined();
   });
 
-  test("saves repository wiki instructions under openwiki", async () => {
+  test("saves repository wiki instructions under arguswiki", async () => {
     const home = await createTempHome();
-    const repo = await mkdtemp(path.join(tmpdir(), "openwiki-repo-"));
+    const repo = await mkdtemp(path.join(tmpdir(), "arguswiki-repo-"));
     const onboarding = await loadOnboardingModule(home);
 
     try {
@@ -121,7 +121,7 @@ describe("OpenWiki onboarding instructions", () => {
   });
 });
 
-describe("OpenWiki onboarding completion", () => {
+describe("ArgusWiki onboarding completion", () => {
   test("does not require a schedule for code mode", async () => {
     const home = await createTempHome();
     const onboarding = await loadOnboardingModule(home);
@@ -141,11 +141,11 @@ describe("OpenWiki onboarding completion", () => {
 
   test("checks repository instructions for completed code mode", async () => {
     const home = await createTempHome();
-    const repo = await mkdtemp(path.join(tmpdir(), "openwiki-repo-"));
+    const repo = await mkdtemp(path.join(tmpdir(), "arguswiki-repo-"));
     const onboarding = await loadOnboardingModule(home);
 
     try {
-      await onboarding.saveOpenWikiOnboardingConfig({
+      await onboarding.saveArgusWikiOnboardingConfig({
         completedAt: "2026-01-01T00:00:00.000Z",
         modeId: "code",
         sourceInstances: [],

@@ -16,15 +16,15 @@ async function git(cwd: string, args: string[]): Promise<string> {
   return stdout.trim();
 }
 
-async function createRepoWithOpenWiki(): Promise<string> {
-  const repo = await mkdtemp(path.join(tmpdir(), "openwiki-noop-"));
+async function createRepoWithArgusWiki(): Promise<string> {
+  const repo = await mkdtemp(path.join(tmpdir(), "arguswiki-noop-"));
   await git(repo, ["init"]);
   await git(repo, ["config", "user.email", "test@example.com"]);
-  await git(repo, ["config", "user.name", "OpenWiki Test"]);
+  await git(repo, ["config", "user.name", "ArgusWiki Test"]);
   await writeFile(path.join(repo, "README.md"), "# Test Repo\n", "utf8");
-  await mkdir(path.join(repo, "openwiki"));
+  await mkdir(path.join(repo, "arguswiki"));
   await writeFile(
-    path.join(repo, "openwiki", "quickstart.md"),
+    path.join(repo, "arguswiki", "quickstart.md"),
     "# Quickstart\n",
     "utf8",
   );
@@ -35,7 +35,7 @@ async function createRepoWithOpenWiki(): Promise<string> {
 
 async function writeLastUpdate(repo: string, gitHead: string): Promise<void> {
   await writeFile(
-    path.join(repo, "openwiki", ".last-update.json"),
+    path.join(repo, "arguswiki", ".last-update.json"),
     `${JSON.stringify({
       updatedAt: new Date().toISOString(),
       command: "update",
@@ -48,7 +48,7 @@ async function writeLastUpdate(repo: string, gitHead: string): Promise<void> {
 
 describe("getUpdateNoopStatus", () => {
   test("detects a clean update with unchanged HEAD as a no-op", async () => {
-    const repo = await createRepoWithOpenWiki();
+    const repo = await createRepoWithArgusWiki();
     const head = await git(repo, ["rev-parse", "HEAD"]);
     await writeLastUpdate(repo, head);
 
@@ -58,7 +58,7 @@ describe("getUpdateNoopStatus", () => {
   });
 
   test("does not skip update when the worktree has uncommitted changes", async () => {
-    const repo = await createRepoWithOpenWiki();
+    const repo = await createRepoWithArgusWiki();
     const head = await git(repo, ["rev-parse", "HEAD"]);
     await writeLastUpdate(repo, head);
     await writeFile(
@@ -72,17 +72,17 @@ describe("getUpdateNoopStatus", () => {
     expect(status.shouldSkip).toBe(false);
   });
 
-  test("skips update when commits since the last run only touch OpenWiki files", async () => {
-    const repo = await createRepoWithOpenWiki();
+  test("skips update when commits since the last run only touch ArgusWiki files", async () => {
+    const repo = await createRepoWithArgusWiki();
     const head = await git(repo, ["rev-parse", "HEAD"]);
     await writeLastUpdate(repo, head);
     await writeFile(
-      path.join(repo, "openwiki", "quickstart.md"),
+      path.join(repo, "arguswiki", "quickstart.md"),
       "# Quickstart\nUpdated\n",
       "utf8",
     );
-    await git(repo, ["add", "openwiki/quickstart.md"]);
-    await git(repo, ["commit", "-m", "update openwiki docs"]);
+    await git(repo, ["add", "arguswiki/quickstart.md"]);
+    await git(repo, ["commit", "-m", "update arguswiki docs"]);
 
     const status = await getUpdateNoopStatus(repo);
 
@@ -90,7 +90,7 @@ describe("getUpdateNoopStatus", () => {
   });
 
   test("does not skip update when commits since the last run touch source files", async () => {
-    const repo = await createRepoWithOpenWiki();
+    const repo = await createRepoWithArgusWiki();
     const head = await git(repo, ["rev-parse", "HEAD"]);
     await writeLastUpdate(repo, head);
     await writeFile(
