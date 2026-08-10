@@ -1,6 +1,6 @@
 {
   "name": "@argus/wiki",
-  "version": "1.0.1",
+  "version": "2.0.0",
   "description": "A CLI that uses a DeepAgents documentation agent to generate and maintain an OpenWiki for a codebase.",
   "license": "MIT",
   "type": "module",
