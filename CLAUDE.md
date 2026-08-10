@@ -10,8 +10,8 @@ MIT-licensed upstream code: see [`LICENSE`](LICENSE) and the attribution in [`RE
 
 ## Local divergence from upstream
 
-- `src/constants.ts` / `src/openwiki-home.ts` — `OPEN_WIKI_DIR` and `openWikiHomeDir` are env-overridable (`OPENWIKI_OUTPUT_DIR`, `OPENWIKI_HOME`), defaulting to upstream's original paths when unset.
-- `src/constants.ts` — `OpenWikiProvider` is narrowed to `"claude-cli"` only. This fork only ever runs headless via `OPENWIKI_PROVIDER=claude-cli`; all other agent backends, the LangChain/LangGraph execution core, and PostHog telemetry were removed ([deanjstone/argus-wiki#35](https://github.com/deanjstone/argus-wiki/issues/35)). The provider abstraction itself (`OpenWikiProvider` union, `PROVIDER_CONFIGS` keyed lookup) remains pluggable, just narrowed to one member.
+- `src/constants.ts` / `src/arguswiki-home.ts` — `OPEN_WIKI_DIR` and `argusWikiHomeDir` are env-overridable (`ARGUSWIKI_OUTPUT_DIR`, `ARGUSWIKI_HOME`), defaulting to upstream's original paths when unset.
+- `src/constants.ts` — `ArgusWikiProvider` is narrowed to `"claude-cli"` only. This fork only ever runs headless via `ARGUSWIKI_PROVIDER=claude-cli`; all other agent backends, the LangChain/LangGraph execution core, and PostHog telemetry were removed ([deanjstone/argus-wiki#35](https://github.com/deanjstone/argus-wiki/issues/35)). The provider abstraction itself (`ArgusWikiProvider` union, `PROVIDER_CONFIGS` keyed lookup) remains pluggable, just narrowed to one member.
 
 ## Not yet done
 
@@ -19,24 +19,24 @@ Wiring this package to actually generate/maintain `~/CONTEXT` vault content end-
 
 ---
 
-## OpenWiki (upstream, self-generated)
+## ArgusWiki (upstream, self-generated)
 
 This package has documentation located in the `openwiki/` directory (i.e. `packages/wiki/openwiki/` from the repo root).
 
 Start here:
 
-- [OpenWiki quickstart](openwiki/quickstart.md)
+- [ArgusWiki quickstart](openwiki/quickstart.md)
 
-OpenWiki includes repository overview, architecture notes, workflows, domain concepts, operations, integrations, testing guidance, and source maps.
+ArgusWiki includes repository overview, architecture notes, workflows, domain concepts, operations, integrations, testing guidance, and source maps.
 
-When working in this package, read the OpenWiki quickstart first, then follow its links to the relevant architecture, workflow, domain, operation, and testing notes.
+When working in this package, read the ArgusWiki quickstart first, then follow its links to the relevant architecture, workflow, domain, operation, and testing notes.
 
-<!-- OPENWIKI:START -->
+<!-- ARGUSWIKI:START -->
 
-## OpenWiki
+## ArgusWiki
 
-This repository uses OpenWiki for recurring code documentation. Start with `openwiki/quickstart.md`, then follow its links to architecture, workflows, domain concepts, operations, integrations, testing guidance, and source maps.
+This repository uses ArgusWiki for recurring code documentation. Start with `openwiki/quickstart.md`, then follow its links to architecture, workflows, domain concepts, operations, integrations, testing guidance, and source maps.
 
-The scheduled OpenWiki GitHub Actions workflow refreshes the repository wiki. Do not hand-edit generated OpenWiki pages unless explicitly asked; prefer updating source code/docs and letting OpenWiki regenerate.
+The scheduled ArgusWiki GitHub Actions workflow refreshes the repository wiki. Do not hand-edit generated ArgusWiki pages unless explicitly asked; prefer updating source code/docs and letting ArgusWiki regenerate.
 
-<!-- OPENWIKI:END -->
+<!-- ARGUSWIKI:END -->

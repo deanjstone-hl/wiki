@@ -1,8 +1,8 @@
-# OpenWiki
+# ArgusWiki
 
 > This package is a hard fork of [langchain-ai/openwiki](https://github.com/langchain-ai/openwiki), living at `packages/wiki` in [argus-context](../../README.md). It carries no live upstream tracking — see [`CLAUDE.md`](CLAUDE.md) for fork status and local divergences. All credit for the original design and implementation goes to the langchain-ai/openwiki authors; this fork does not contribute changes back upstream.
 
-OpenWiki is a CLI that writes and maintains agent wikis for codebases or purpose memory. It's built specifically for agents, can ingest local knowledge sources through built-in connectors or git repositories and synthesize them into a local wiki.
+ArgusWiki is a CLI that writes and maintains agent wikis for codebases or purpose memory. It's built specifically for agents, can ingest local knowledge sources through built-in connectors or git repositories and synthesize them into a local wiki.
 
 <div align="center">
   <a href="https://trendshift.io/repositories/70339?utm_source=trendshift-badge&amp;utm_medium=badge&amp;utm_campaign=badge-trendshift-70339" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/trendshift/repositories/70339/daily" alt="langchain-ai%2Fopenwiki | Trendshift" width="250" height="55"/></a>
@@ -16,7 +16,7 @@ OpenWiki is a CLI that writes and maintains agent wikis for codebases or purpose
 npm install -g openwiki
 ```
 
-On Windows, prefer installing OpenWiki with Node.js package managers such as
+On Windows, prefer installing ArgusWiki with Node.js package managers such as
 `npm` or `pnpm`:
 
 ```sh
@@ -25,7 +25,7 @@ npm install -g openwiki
 pnpm add -g openwiki
 ```
 
-`bun install -g openwiki` can fall back to compiling OpenWiki's `better-sqlite3`
+`bun install -g openwiki` can fall back to compiling ArgusWiki's `better-sqlite3`
 checkpointing dependency. Before using that path, install Visual Studio Build
 Tools with the Desktop development with C++ workload. Bun does not run lifecycle
 scripts from installed packages by default, so it cannot display a package-level
@@ -33,18 +33,18 @@ warning before that native dependency build starts.
 
 ## Quick Start
 
-Initialize OpenWiki in code mode, configure your model and API key, then generate documentation:
+Initialize ArgusWiki in code mode, configure your model and API key, then generate documentation:
 
 ```sh
 openwiki --init
 ```
 
-OpenWiki has two modes:
+ArgusWiki has two modes:
 
-- **Personal mode** builds a local personal brain wiki in `~/.openwiki/wiki` from
+- **Personal mode** builds a local personal brain wiki in `~/.arguswiki/wiki` from
   configured sources like local repositories, Gmail, Notion, Web Search, Hacker
   News, and X/Twitter.
-- **Code mode** builds repository documentation in `openwiki/` for the current
+- **Code mode** builds repository documentation in `arguswiki/` for the current
   codebase.
 
 Bare `openwiki --init` and `openwiki --update` run in code mode. Use
@@ -57,7 +57,7 @@ Then to ensure your documentation stays up-to-date, add the CI workflow for your
 
 For repository documentation in GitHub Actions, use
 `openwiki code --update --print`. You do not need to run `--init` in CI:
-`--update` will create the initial `openwiki/` docs if they do not exist yet, as
+`--update` will create the initial `arguswiki/` docs if they do not exist yet, as
 long as the workflow provides the required provider and model environment
 variables.
 
@@ -69,7 +69,7 @@ Start the interactive CLI in code mode for the current repository:
 openwiki
 ```
 
-Start OpenWiki with an initial request:
+Start ArgusWiki with an initial request:
 
 ```sh
 openwiki "Please generate documentation for this repository"
@@ -87,7 +87,7 @@ Run a single command and exit:
 openwiki -p "Summarize what you can do"
 ```
 
-Initialize OpenWiki:
+Initialize ArgusWiki:
 
 ```sh
 openwiki --init
@@ -142,36 +142,36 @@ Start an ngrok tunnel for Slack OAuth:
 openwiki ngrok start
 ```
 
-This starts ngrok with a random HTTPS forwarding URL. OpenWiki reads ngrok's
+This starts ngrok with a random HTTPS forwarding URL. ArgusWiki reads ngrok's
 local inspection API, appends `/callback`, and saves
-`OPENWIKI_HTTPS_OAUTH_REDIRECT_URI` automatically. Register the printed callback
+`ARGUSWIKI_HTTPS_OAUTH_REDIRECT_URI` automatically. Register the printed callback
 URL in Slack. If you have a fixed ngrok domain, run
 `openwiki ngrok start https://<your-ngrok-domain>`. X/Twitter and Gmail auth
 ignore that HTTPS override and keep using the local loopback callback,
 `http://127.0.0.1:53682/callback`.
 
-Bare `openwiki` runs in code mode for the current repository. It creates initial repository documentation in `openwiki/` when no wiki exists. Use `openwiki personal` for the local general-purpose wiki in `~/.openwiki/wiki/`. By default, the CLI stays open after each run so you can send follow-up messages. Use `-p` or `--print` for a one-shot non-interactive run that prints the final assistant output.
+Bare `openwiki` runs in code mode for the current repository. It creates initial repository documentation in `arguswiki/` when no wiki exists. Use `openwiki personal` for the local general-purpose wiki in `~/.arguswiki/wiki/`. By default, the CLI stays open after each run so you can send follow-up messages. Use `-p` or `--print` for a one-shot non-interactive run that prints the final assistant output.
 
 Bare `openwiki --init` and `openwiki --update` default to code mode and operate on repository documentation. Use the `personal` positional mode or `--mode personal` to initialize or update the local personal brain wiki.
 
-On each `code` run, `openwiki` maintains both an `AGENTS.md` and a `CLAUDE.md` at the repository root, adding prompting that instructs your coding agent to reference the wiki when searching for context. Each file is created if it does not already exist. If a file is present, OpenWiki only rewrites its own `<!-- OPENWIKI:START -->…<!-- OPENWIKI:END -->` block and leaves the rest of your content untouched (appending the block the first time). The scheduled GitHub Actions workflow includes these files, along with the workflow itself, in the documentation pull request.
+On each `code` run, `openwiki` maintains both an `AGENTS.md` and a `CLAUDE.md` at the repository root, adding prompting that instructs your coding agent to reference the wiki when searching for context. Each file is created if it does not already exist. If a file is present, ArgusWiki only rewrites its own `<!-- ARGUSWIKI:START -->…<!-- ARGUSWIKI:END -->` block and leaves the rest of your content untouched (appending the block the first time). The scheduled GitHub Actions workflow includes these files, along with the workflow itself, in the documentation pull request.
 
 Repository-specific wiki instructions are stored separately in
-`openwiki/INSTRUCTIONS.md`. This file is a shared, user-authored brief for the
-repository wiki: OpenWiki reads it for scope and priorities, but it is not
+`arguswiki/INSTRUCTIONS.md`. This file is a shared, user-authored brief for the
+repository wiki: ArgusWiki reads it for scope and priorities, but it is not
 generated documentation and is not rewritten during normal init, update, or chat
 runs unless you explicitly ask to change the brief.
 
-On the first interactive run, OpenWiki will have you configure your inference provider, API key, and LLM. You will also be able to set a LangSmith API key to trace your OpenWiki runs to a LangSmith tracing project named "openwiki" (optional).
+On the first interactive run, ArgusWiki will have you configure your inference provider, API key, and LLM. You will also be able to set a LangSmith API key to trace your ArgusWiki runs to a LangSmith tracing project named "arguswiki" (optional).
 
-These configuration options and secrets will be saved to `~/.openwiki/.env` on your local machine.
+These configuration options and secrets will be saved to `~/.arguswiki/.env` on your local machine.
 
 ## Local Connectors
 
-OpenWiki's first-run onboarding offers connector setup for local Git repositories, Notion, Gmail, X/Twitter, Web Search, and Hacker News. During an ingestion run, deterministic connector tools write raw data and manifests under `~/.openwiki/connectors/<connector>/raw/`, then source-specific agent runs synthesize the local wiki under `~/.openwiki/wiki/` from those local files.
+ArgusWiki's first-run onboarding offers connector setup for local Git repositories, Notion, Gmail, X/Twitter, Web Search, and Hacker News. During an ingestion run, deterministic connector tools write raw data and manifests under `~/.arguswiki/connectors/<connector>/raw/`, then source-specific agent runs synthesize the local wiki under `~/.arguswiki/wiki/` from those local files.
 
 You can configure the same connector more than once. For example, add one Web
-Search source for AI research and another for NBA news; OpenWiki stores them as
+Search source for AI research and another for NBA news; ArgusWiki stores them as
 separate source instances such as `web-search-1` and `web-search-2`. Run all
 instances with `openwiki ingest all`, all instances for one connector with
 `openwiki ingest web-search`, or one instance with
@@ -179,30 +179,30 @@ instances with `openwiki ingest all`, all instances for one connector with
 
 - `git-repo` reads configured local repository paths and writes compact manifests.
 - `x` uses the X API directly with OAuth user-context credentials for home timeline, user posts, mentions, bookmarks, and list posts.
-- `notion` targets the hosted Notion MCP server, so users should authenticate through Notion OAuth instead of pasting a Notion token into OpenWiki.
+- `notion` targets the hosted Notion MCP server, so users should authenticate through Notion OAuth instead of pasting a Notion token into ArgusWiki.
 - `google` uses the Gmail API directly with OAuth user credentials to fetch recent mail, with room to add Drive, Calendar, and other Google providers later.
 - `web-search` uses Tavily through LangChain and requires `TAVILY_API_KEY`.
 - `hackernews` uses public Hacker News feed and search APIs, with no credentials required.
 
-Connector secrets are referenced by env var name and stored in `~/.openwiki/.env`; connector config files should never contain raw secret values.
+Connector secrets are referenced by env var name and stored in `~/.arguswiki/.env`; connector config files should never contain raw secret values.
 
-`openwiki auth <provider>` runs a local browser OAuth flow, saves returned tokens into `~/.openwiki/.env`, creates connector config when possible, and discovers MCP tools for MCP-backed providers. Slack and Gmail require app client credentials to already be set in that file; Notion uses dynamic client registration for hosted MCP; X uses OAuth 2.0 with PKCE. After `openwiki auth gmail`, the Google connector can ingest Gmail directly with no MCP transport setup.
+`openwiki auth <provider>` runs a local browser OAuth flow, saves returned tokens into `~/.arguswiki/.env`, creates connector config when possible, and discovers MCP tools for MCP-backed providers. Slack and Gmail require app client credentials to already be set in that file; Notion uses dynamic client registration for hosted MCP; X uses OAuth 2.0 with PKCE. After `openwiki auth gmail`, the Google connector can ingest Gmail directly with no MCP transport setup.
 
 `openwiki auth configure <provider>` and `openwiki auth tools <provider>` are advanced/retry commands for regenerating connector config or inspecting live MCP tools.
 
 First-run onboarding also lets users choose a wiki template, customize its scope,
 and save per-source ingestion notes and source schedules in
-`~/.openwiki/onboarding.json`. The global personal wiki instructions are saved
-in `~/.openwiki/INSTRUCTIONS.md`. On macOS, source schedules are installed as
+`~/.arguswiki/onboarding.json`. The global personal wiki instructions are saved
+in `~/.arguswiki/INSTRUCTIONS.md`. On macOS, source schedules are installed as
 user LaunchAgents under `~/Library/LaunchAgents/` and write logs under
-`~/.openwiki/logs/`.
+`~/.arguswiki/logs/`.
 
-See the OpenWiki operations docs for credential storage and provider setup
+See the ArgusWiki operations docs for credential storage and provider setup
 notes.
 
 ## Customizing
 
-OpenWiki supports OpenAI (with an API key or a ChatGPT login), OpenRouter, Gemini (AI Studio), Gemini Enterprise (Vertex AI), Nebius Token Factory, Fireworks, Baseten, NVIDIA NIM, an OpenAI-compatible provider, AWS Bedrock, and Anthropic out of the box. The onboarding default is OpenAI with `gpt-5.6-terra`, and each inference provider also includes pre-defined model options plus support for custom model IDs.
+ArgusWiki supports OpenAI (with an API key or a ChatGPT login), OpenRouter, Gemini (AI Studio), Gemini Enterprise (Vertex AI), Nebius Token Factory, Fireworks, Baseten, NVIDIA NIM, an OpenAI-compatible provider, AWS Bedrock, and Anthropic out of the box. The onboarding default is OpenAI with `gpt-5.6-terra`, and each inference provider also includes pre-defined model options plus support for custom model IDs.
 
 ### Alternative base URLs
 
@@ -211,7 +211,7 @@ To route the Anthropic provider at an alternative, Anthropic-compatible endpoint
 `ANTHROPIC_BASE_URL` alongside `ANTHROPIC_API_KEY`:
 
 ```bash
-OPENWIKI_PROVIDER=anthropic
+ARGUSWIKI_PROVIDER=anthropic
 ANTHROPIC_API_KEY=your-key
 ANTHROPIC_BASE_URL=https://your-gateway.example.com/anthropic
 ```
@@ -225,10 +225,10 @@ letting you reach whatever upstream providers the gateway fronts through a singl
 OpenAI-shaped API. Set the model ID to whatever name the gateway exposes:
 
 ```bash
-OPENWIKI_PROVIDER=openai-compatible
+ARGUSWIKI_PROVIDER=openai-compatible
 OPENAI_COMPATIBLE_API_KEY=your-gateway-key
 OPENAI_COMPATIBLE_BASE_URL=https://your-gateway.example.com/v1
-OPENWIKI_MODEL_ID=your-gateway-model-name
+ARGUSWIKI_MODEL_ID=your-gateway-model-name
 ```
 
 ### AWS Bedrock
@@ -238,11 +238,11 @@ credentials rather than a single vendor API key. It authenticates with an AWS
 access key ID, a secret access key, and a region:
 
 ```bash
-OPENWIKI_PROVIDER=bedrock
+ARGUSWIKI_PROVIDER=bedrock
 BEDROCK_AWS_ACCESS_KEY_ID=your-access-key-id
 BEDROCK_AWS_SECRET_ACCESS_KEY=your-secret-access-key
 BEDROCK_AWS_REGION=us-east-1
-OPENWIKI_MODEL_ID=anthropic.claude-sonnet-5
+ARGUSWIKI_MODEL_ID=anthropic.claude-sonnet-5
 ```
 
 Which model IDs are available depends on your AWS account and region (which
@@ -268,18 +268,18 @@ Instead of pasting an API key, run the setup wizard and complete a browser
 login:
 
 ```bash
-OPENWIKI_PROVIDER=openai-chatgpt openwiki code --init
+ARGUSWIKI_PROVIDER=openai-chatgpt openwiki code --init
 # or
-OPENWIKI_PROVIDER=openai-chatgpt openwiki personal --init
+ARGUSWIKI_PROVIDER=openai-chatgpt openwiki personal --init
 ```
 
 The wizard opens `https://auth.openai.com` in your browser (and also prints the
 URL for headless/SSH use, where you can open it on another machine — or paste the
 redirect URL back into the terminal to finish without a callback). After you sign
-in with your ChatGPT account, OpenWiki captures the OAuth callback, shows the
+in with your ChatGPT account, ArgusWiki captures the OAuth callback, shows the
 signed-in email and plan, and then continues to model and LangSmith selection
 just like the other providers. It stores the resulting access token, refresh
-token, expiry, account id, email, and plan in `~/.openwiki/.env`
+token, expiry, account id, email, and plan in `~/.arguswiki/.env`
 (`OPENAI_CHATGPT_ACCESS_TOKEN`, `OPENAI_CHATGPT_REFRESH_TOKEN`,
 `OPENAI_CHATGPT_EXPIRES_AT`, `OPENAI_CHATGPT_ACCOUNT_ID`, `OPENAI_CHATGPT_EMAIL`,
 `OPENAI_CHATGPT_PLAN`). These are managed for you — the access token is refreshed
@@ -292,7 +292,7 @@ The `gemini` provider runs Google's Gemini models through the AI Studio API with
 a single API key:
 
 ```bash
-OPENWIKI_PROVIDER=gemini
+ARGUSWIKI_PROVIDER=gemini
 GEMINI_API_KEY=your-ai-studio-key
 ```
 
@@ -310,12 +310,12 @@ Application Default Credentials (ADC), so any of the standard mechanisms work:
 - workload identity when running on Google Cloud (GKE, Cloud Run, GCE) or in CI.
 
 ```bash
-OPENWIKI_PROVIDER=gemini-enterprise
+ARGUSWIKI_PROVIDER=gemini-enterprise
 GOOGLE_CLOUD_PROJECT=your-gcp-project
 GOOGLE_CLOUD_LOCATION=global   # optional, defaults to global
 ```
 
-Set `OPENWIKI_MODEL_ID` to any Model Garden model. Gemini and Claude ship as
+Set `ARGUSWIKI_MODEL_ID` to any Model Garden model. Gemini and Claude ship as
 preset options; partner/open-weight models are reached by pasting their model ID
 (for example `publishers/meta/models/llama-3.3-70b-instruct-maas`).
 
@@ -328,28 +328,28 @@ regional endpoints (for example `europe-west1` or `us-east5`) can be set via
 using them.
 
 Note that `GOOGLE_CLOUD_PROJECT` (and `GOOGLE_APPLICATION_CREDENTIALS`, if you
-choose to store it there) is persisted to `~/.openwiki/.env` and loaded into the
-OpenWiki process environment at startup when not already set — values already
+choose to store it there) is persisted to `~/.arguswiki/.env` and loaded into the
+ArgusWiki process environment at startup when not already set — values already
 present in your shell always win.
 
 For CI, authenticate before the update job runs — for example with
 [`google-github-actions/auth`](https://github.com/google-github-actions/auth)
 (workload identity federation) in GitHub Actions — and set
-`OPENWIKI_PROVIDER=gemini-enterprise` and `GOOGLE_CLOUD_PROJECT` in the job
+`ARGUSWIKI_PROVIDER=gemini-enterprise` and `GOOGLE_CLOUD_PROJECT` in the job
 environment.
 
-Base URLs (and all credentials) can be set in your environment or stored in `~/.openwiki/.env`.
+Base URLs (and all credentials) can be set in your environment or stored in `~/.arguswiki/.env`.
 
 ### Provider retry attempts
 
-OpenWiki uses LangChain's built-in retry handling for transient provider errors.
-To override the number of retries after the first provider request, set `OPENWIKI_PROVIDER_RETRY_ATTEMPTS`:
+ArgusWiki uses LangChain's built-in retry handling for transient provider errors.
+To override the number of retries after the first provider request, set `ARGUSWIKI_PROVIDER_RETRY_ATTEMPTS`:
 
 ```bash
-OPENWIKI_PROVIDER_RETRY_ATTEMPTS=3
+ARGUSWIKI_PROVIDER_RETRY_ATTEMPTS=3
 ```
 
-The value must be a positive integer. If the value is unset, OpenWiki defaults to 3 retries.
+The value must be a positive integer. If the value is unset, ArgusWiki defaults to 3 retries.
 
 If there's an inference provider or model you'd like to see added, please open a PR!
 

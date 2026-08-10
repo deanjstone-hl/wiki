@@ -18,17 +18,17 @@ Restart your shell, or source the profile file that `pnpm setup` changed. Then
 set up and link this package:
 
 ```sh
-cd /path/to/openwiki
+cd /path/to/arguswiki
 pnpm install
 pnpm run build
 pnpm link --global
 ```
 
-Run a dry test from the repo you want OpenWiki to inspect:
+Run a dry test from the repo you want ArgusWiki to inspect:
 
 ```sh
 cd /path/to/target/repo
-OPENWIKI_DEV=1 openwiki --dry-run
+ARGUSWIKI_DEV=1 openwiki --dry-run
 ```
 
 Run the real CLI from the target repo:
@@ -47,12 +47,12 @@ avoids typing the path to `dist/cli.js`.
 If you do not want to configure pnpm globals, use a shell alias instead:
 
 ```sh
-alias openwiki='node /path/to/openwiki/dist/cli.js'
+alias openwiki='node /path/to/arguswiki/dist/cli.js'
 ```
 
 That alias can go in `~/.zshrc` if you want it to persist.
 
-After changing OpenWiki source code, rebuild from this package directory:
+After changing ArgusWiki source code, rebuild from this package directory:
 
 ```sh
 pnpm run build
@@ -62,8 +62,8 @@ The existing global link will keep using the rebuilt `dist/cli.js`.
 
 Real runs can write:
 
-- `openwiki/`
-- `~/.openwiki/.env` for local OpenRouter model/key settings and optional LangSmith credentials
+- `arguswiki/`
+- `~/.arguswiki/.env` for local OpenRouter model/key settings and optional LangSmith credentials
 
 Scheduled update workflow example:
 

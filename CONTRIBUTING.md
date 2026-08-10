@@ -1,4 +1,4 @@
-# Contributing to OpenWiki
+# Contributing to ArgusWiki
 
 Thanks for contributing! Our standard for PR contributions is **one PR = one change**.
 This allows us to keep reviews fast and the repo history clean.
