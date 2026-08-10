@@ -1,6 +1,6 @@
 import {
-  OPENWIKI_GMAIL_ACCESS_TOKEN_ENV_KEY,
-  OPENWIKI_GMAIL_REFRESH_TOKEN_ENV_KEY,
+  ARGUSWIKI_GMAIL_ACCESS_TOKEN_ENV_KEY,
+  ARGUSWIKI_GMAIL_REFRESH_TOKEN_ENV_KEY,
 } from "../../constants.js";
 import {
   getOAuthAccessToken,
@@ -66,8 +66,8 @@ const definition: ConnectorDefinition = {
   displayName: "Google / Gmail",
   id: "google",
   requiredEnv: [
-    OPENWIKI_GMAIL_ACCESS_TOKEN_ENV_KEY,
-    OPENWIKI_GMAIL_REFRESH_TOKEN_ENV_KEY,
+    ARGUSWIKI_GMAIL_ACCESS_TOKEN_ENV_KEY,
+    ARGUSWIKI_GMAIL_REFRESH_TOKEN_ENV_KEY,
   ],
   supportsAgenticDiscovery: false,
 };
@@ -104,10 +104,10 @@ async function ingest(
     return {
       connectorId: "google",
       message:
-        "Google / Gmail connector is not enabled. Set enabled=true in ~/.openwiki/connectors/google/config.json.",
+        "Google / Gmail connector is not enabled. Set enabled=true in ~/.arguswiki/connectors/google/config.json.",
       rawFiles,
       runId,
-      statePath: "~/.openwiki/connectors/google/state.json",
+      statePath: "~/.arguswiki/connectors/google/state.json",
       status: "skipped",
       warnings,
     };
@@ -176,7 +176,7 @@ async function ingest(
     message: `Fetched ${messages.length} Gmail message(s).`,
     rawFiles,
     runId,
-    statePath: "~/.openwiki/connectors/google/state.json",
+    statePath: "~/.arguswiki/connectors/google/state.json",
     status: rawFiles.length > 0 ? "success" : "skipped",
     warnings,
   };

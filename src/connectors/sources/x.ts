@@ -12,7 +12,7 @@ import type {
   ConnectorIngestResult,
   ConnectorRuntime,
 } from "../types.js";
-import { OPENWIKI_X_ACCESS_TOKEN_ENV_KEY } from "../../constants.js";
+import { ARGUSWIKI_X_ACCESS_TOKEN_ENV_KEY } from "../../constants.js";
 import { getOAuthAccessToken } from "../../auth/tokens.js";
 
 type XConfig = {
@@ -52,7 +52,7 @@ const definition: ConnectorDefinition = {
     "Fetches X/Twitter user timelines, mentions, list posts, and bookmarks through X API v2 with OAuth user context.",
   displayName: "X / Twitter",
   id: "x",
-  requiredEnv: [OPENWIKI_X_ACCESS_TOKEN_ENV_KEY],
+  requiredEnv: [ARGUSWIKI_X_ACCESS_TOKEN_ENV_KEY],
   supportsAgenticDiscovery: false,
 };
 
@@ -84,22 +84,22 @@ async function ingest(
     return {
       connectorId: "x",
       message:
-        "X connector is not enabled. Configure ~/.openwiki/connectors/x/config.json and set OPENWIKI_X_ACCESS_TOKEN in ~/.openwiki/.env.",
+        "X connector is not enabled. Configure ~/.arguswiki/connectors/x/config.json and set ARGUSWIKI_X_ACCESS_TOKEN in ~/.arguswiki/.env.",
       rawFiles,
       runId,
-      statePath: "~/.openwiki/connectors/x/state.json",
+      statePath: "~/.arguswiki/connectors/x/state.json",
       status: "skipped",
       warnings,
     };
   }
 
-  if (!process.env[OPENWIKI_X_ACCESS_TOKEN_ENV_KEY]) {
+  if (!process.env[ARGUSWIKI_X_ACCESS_TOKEN_ENV_KEY]) {
     return {
       connectorId: "x",
-      message: `${OPENWIKI_X_ACCESS_TOKEN_ENV_KEY} is required for X ingestion.`,
+      message: `${ARGUSWIKI_X_ACCESS_TOKEN_ENV_KEY} is required for X ingestion.`,
       rawFiles,
       runId,
-      statePath: "~/.openwiki/connectors/x/state.json",
+      statePath: "~/.arguswiki/connectors/x/state.json",
       status: "error",
       warnings,
     };
@@ -179,7 +179,7 @@ async function ingest(
     message: `Fetched ${rawFiles.length} X stream dump(s).`,
     rawFiles,
     runId,
-    statePath: "~/.openwiki/connectors/x/state.json",
+    statePath: "~/.arguswiki/connectors/x/state.json",
     status: rawFiles.length > 0 ? "success" : "skipped",
     warnings,
   };

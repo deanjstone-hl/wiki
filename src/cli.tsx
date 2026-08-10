@@ -17,7 +17,7 @@ import {
   shouldRunNonInteractively,
   type CliCommand,
   type HelpRow,
-  type OpenWikiRunMode,
+  type ArgusWikiRunMode,
 } from "./commands.js";
 import { resolveStartupCommand } from "./startup.js";
 import {
@@ -27,11 +27,11 @@ import {
 } from "./credentials.js";
 import {
   getCredentialDiagnostics,
-  loadOpenWikiEnv,
-  saveOpenWikiEnv,
+  loadArgusWikiEnv,
+  saveArgusWikiEnv,
   type CredentialDiagnostic,
 } from "./env.js";
-import { createOpenWikiThreadId, runOpenWikiAgent } from "./agent/index.js";
+import { createArgusWikiThreadId, runArgusWikiAgent } from "./agent/index.js";
 import {
   getErrorMessage,
   isSecretLikeKey,
@@ -39,18 +39,18 @@ import {
 } from "./diagnostics.js";
 import { stripHtmlTags } from "./utils.js";
 import {
-  type OpenWikiRunEvent,
-  type OpenWikiRunResult,
+  type ArgusWikiRunEvent,
+  type ArgusWikiRunResult,
 } from "./agent/types.js";
 import {
-  runOpenWikiIngestion,
-  type OpenWikiIngestionResult,
+  runArgusWikiIngestion,
+  type ArgusWikiIngestionResult,
 } from "./ingestion.js";
 import {
-  readOpenWikiOnboardingConfig,
-  saveOpenWikiOnboardingConfig,
+  readArgusWikiOnboardingConfig,
+  saveArgusWikiOnboardingConfig,
 } from "./onboarding.js";
-import { openWikiLocalWikiDir } from "./openwiki-home.js";
+import { argusWikiLocalWikiDir } from "./arguswiki-home.js";
 import {
   deleteConnectorSchedules,
   getSavedPowerScheduleStatus,
@@ -72,14 +72,14 @@ import {
   isValidModelId,
   normalizeModelId,
   normalizeProvider,
-  OPENWIKI_PROVIDER_ENV_KEY,
-  OPENWIKI_MODEL_ID_ENV_KEY,
+  ARGUSWIKI_PROVIDER_ENV_KEY,
+  ARGUSWIKI_MODEL_ID_ENV_KEY,
   resolveConfiguredProvider,
-  SELECTABLE_OPENWIKI_PROVIDERS,
-  OPENWIKI_VERSION,
-  type OpenWikiProvider,
+  SELECTABLE_ARGUSWIKI_PROVIDERS,
+  ARGUSWIKI_VERSION,
+  type ArgusWikiProvider,
 } from "./constants.js";
-import type { OpenWikiCommand, OpenWikiOutputMode } from "./agent/types.js";
+import type { ArgusWikiCommand, ArgusWikiOutputMode } from "./agent/types.js";
 
 type RunState =
   | { status: "idle" }
@@ -92,19 +92,19 @@ type RunState =
     }
   | {
       status: "ingestion-success";
-      result: OpenWikiIngestionResult;
+      result: ArgusWikiIngestionResult;
       log: RunLogItem[];
       credentialDiagnostics?: CredentialDiagnostic[];
     }
   | {
       status: "running";
-      command: OpenWikiCommand;
+      command: ArgusWikiCommand;
       log: RunLogItem[];
       credentialDiagnostics?: CredentialDiagnostic[];
     }
   | {
       status: "success";
-      result: OpenWikiRunResult;
+      result: ArgusWikiRunResult;
       log: RunLogItem[];
       credentialDiagnostics?: CredentialDiagnostic[];
     }
@@ -132,11 +132,11 @@ type RunLogItem = {
 
 type CompletedRun = {
   id: number;
-  command: OpenWikiCommand;
+  command: ArgusWikiCommand;
   credentialDiagnostics?: CredentialDiagnostic[];
   log: RunLogItem[];
   message: string | null;
-  result: OpenWikiRunResult;
+  result: ArgusWikiRunResult;
 };
 
 type ErrorDiagnostic = {
@@ -148,7 +148,7 @@ type AppProps = {
   command: CliCommand;
 };
 
-const OPENWIKI_LOGO_LINES = [
+const ARGUSWIKI_LOGO_LINES = [
   "  ___                  __        ___ _    _ ",
   " / _ \\ _ __   ___ _ __ \\ \\      / (_) | _(_)",
   "| | | | '_ \\ / _ \\ '_ \\ \\ \\ /\\ / /| | |/ / |",
@@ -156,28 +156,28 @@ const OPENWIKI_LOGO_LINES = [
   " \\___/| .__/ \\___|_| |_|  \\_/\\_/  |_|_|\\_\\_|",
   "      |_|",
 ];
-const OPENWIKI_LOGO_WIDTH = Math.max(
-  ...OPENWIKI_LOGO_LINES.map((line) => line.length),
+const ARGUSWIKI_LOGO_WIDTH = Math.max(
+  ...ARGUSWIKI_LOGO_LINES.map((line) => line.length),
 );
 
 function App({ command }: AppProps) {
   const app = useApp();
   const startupModelId = command.kind === "run" ? command.modelId : null;
   const startupRunMode = command.kind === "run" ? command.mode : "personal";
-  const [runMode, setRunMode] = useState<OpenWikiRunMode>(startupRunMode);
+  const [runMode, setRunMode] = useState<ArgusWikiRunMode>(startupRunMode);
   const [codeRuntimeCwd, setCodeRuntimeCwd] = useState(process.cwd());
   const runtimeCwd = getRunModeCwd(runMode, codeRuntimeCwd);
   const runtimeOutputMode = getRunModeOutputMode(runMode);
   const startupProvider = resolveConfiguredProvider();
   const autoExitOnSuccess = shouldAutoExitStartupRun(command);
   const [sessionProvider, setSessionProvider] =
-    useState<OpenWikiProvider>(startupProvider);
+    useState<ArgusWikiProvider>(startupProvider);
   const [sessionModelId, setSessionModelId] = useState<string | null>(
     startupModelId,
   );
   const activeRunId = useRef(0);
-  const sessionThreadId = useRef(createOpenWikiThreadId(runtimeCwd));
-  const sessionThreadMode = useRef<OpenWikiRunMode>(runMode);
+  const sessionThreadId = useRef(createArgusWikiThreadId(runtimeCwd));
+  const sessionThreadMode = useRef<ArgusWikiRunMode>(runMode);
   const mountedRef = useRef(false);
   const nextLogId = useRef(1);
   const nextCompletedRunId = useRef(1);
@@ -201,7 +201,7 @@ function App({ command }: AppProps) {
     process.stdin.isTTY &&
     needsCredentialSetup(sessionModelId, runMode);
   const [resolvedCommand, setResolvedCommand] =
-    useState<OpenWikiCommand | null>(
+    useState<ArgusWikiCommand | null>(
       command.kind === "run" &&
         (command.shouldStart || shouldOpenSetupForExplicitModeChat)
         ? command.command
@@ -230,7 +230,7 @@ function App({ command }: AppProps) {
   }
 
   function submitCommandRun(
-    nextCommand: Extract<OpenWikiCommand, "init" | "update">,
+    nextCommand: Extract<ArgusWikiCommand, "init" | "update">,
     message: string | null,
   ) {
     setActiveUserMessage(message);
@@ -246,7 +246,7 @@ function App({ command }: AppProps) {
     activeRunLog.current = [];
     setResolvedCommand(null);
     setActiveUserMessage(
-      "Run source-specific OpenWiki ingestion for configured sources.",
+      "Run source-specific ArgusWiki ingestion for configured sources.",
     );
     setActiveMessageIsFollowup(false);
     setRunState({
@@ -254,7 +254,7 @@ function App({ command }: AppProps) {
       log: [],
     });
 
-    void runOpenWikiIngestion(process.cwd(), {
+    void runArgusWikiIngestion(process.cwd(), {
       debug: isDebugMode(),
       modelId,
       target: "all",
@@ -323,7 +323,7 @@ function App({ command }: AppProps) {
 
   function clearSession() {
     activeRunId.current += 1;
-    sessionThreadId.current = createOpenWikiThreadId(runtimeCwd);
+    sessionThreadId.current = createArgusWikiThreadId(runtimeCwd);
     activeRunCredentialDiagnostics.current = undefined;
     activeRunLog.current = [];
     nextLogId.current = 1;
@@ -336,21 +336,21 @@ function App({ command }: AppProps) {
   }
 
   async function selectModel(modelId: string) {
-    await saveOpenWikiEnv({
-      [OPENWIKI_MODEL_ID_ENV_KEY]: modelId,
+    await saveArgusWikiEnv({
+      [ARGUSWIKI_MODEL_ID_ENV_KEY]: modelId,
     });
     setSessionModelId(modelId);
   }
 
-  async function selectProvider(provider: OpenWikiProvider) {
+  async function selectProvider(provider: ArgusWikiProvider) {
     const modelId =
       getProviderModelOptions(provider).length > 0
         ? getDefaultModelId(provider)
         : null;
 
-    await saveOpenWikiEnv({
-      [OPENWIKI_PROVIDER_ENV_KEY]: provider,
-      ...(modelId ? { [OPENWIKI_MODEL_ID_ENV_KEY]: modelId } : {}),
+    await saveArgusWikiEnv({
+      [ARGUSWIKI_PROVIDER_ENV_KEY]: provider,
+      ...(modelId ? { [ARGUSWIKI_MODEL_ID_ENV_KEY]: modelId } : {}),
     });
     setSessionProvider(provider);
     setSessionModelId(modelId);
@@ -369,7 +369,7 @@ function App({ command }: AppProps) {
       return;
     }
 
-    sessionThreadId.current = createOpenWikiThreadId(runtimeCwd);
+    sessionThreadId.current = createArgusWikiThreadId(runtimeCwd);
     sessionThreadMode.current = runMode;
   }, [runMode, runtimeCwd]);
 
@@ -407,7 +407,7 @@ function App({ command }: AppProps) {
 
       setRunState({
         status: "error",
-        message: `${missingEnvKey} is required. Run openwiki in an interactive terminal to save credentials.${
+        message: `${missingEnvKey} is required. Run arguswiki in an interactive terminal to save credentials.${
           hint ? ` ${hint}` : ""
         }`,
       });
@@ -463,7 +463,7 @@ function App({ command }: AppProps) {
 
     setupPromise
       .then(() =>
-        runOpenWikiAgent(resolvedCommand, runtimeCwd, {
+        runArgusWikiAgent(resolvedCommand, runtimeCwd, {
           debug: isDebugMode(),
           isFollowup: activeMessageIsFollowup,
           modelId: sessionModelId,
@@ -619,11 +619,11 @@ function App({ command }: AppProps) {
               result.mode,
               nextCodeRuntimeCwd,
             );
-            sessionThreadId.current = createOpenWikiThreadId(nextRuntimeCwd);
+            sessionThreadId.current = createArgusWikiThreadId(nextRuntimeCwd);
             sessionThreadMode.current = result.mode;
             setRunMode(result.mode);
           } else if (result.repoRoot) {
-            sessionThreadId.current = createOpenWikiThreadId(result.repoRoot);
+            sessionThreadId.current = createArgusWikiThreadId(result.repoRoot);
             sessionThreadMode.current = result.mode;
           }
 
@@ -698,7 +698,7 @@ function App({ command }: AppProps) {
             value={runState.result.modelId}
           />
         ) : null}
-        <StatusLine tone="active" label="Next" value="starting openwiki" />
+        <StatusLine tone="active" label="Next" value="starting arguswiki" />
       </Box>
     );
   }
@@ -806,7 +806,7 @@ function App({ command }: AppProps) {
         <Header modelId={displayModelId} subtitle="Starting follow-up" />
         <ChatHistory runs={completedRuns} />
         {activeUserMessage ? <PromptBlock message={activeUserMessage} /> : null}
-        <StatusLine tone="active" label="Next" value="starting openwiki" />
+        <StatusLine tone="active" label="Next" value="starting arguswiki" />
       </Box>
     );
   }
@@ -889,7 +889,7 @@ function DryRunView({
   shouldStart,
   userMessage,
 }: {
-  command: OpenWikiCommand;
+  command: ArgusWikiCommand;
   modelId: string | null;
   shouldStart: boolean;
   userMessage: string | null;
@@ -901,7 +901,7 @@ function DryRunView({
         <StatusLine
           tone="active"
           label="Command"
-          value={`openwiki ${command}`}
+          value={`arguswiki ${command}`}
         />
         <StatusLine tone="muted" label="Mode" value={command} />
         <StatusLine
@@ -919,7 +919,7 @@ function DryRunView({
         />
         <StatusLine tone="muted" label="Agent" value="not invoked" />
         <StatusLine tone="muted" label="Writes" value="no files or metadata" />
-        <StatusLine tone="muted" label="Output" value="~/.openwiki/wiki" />
+        <StatusLine tone="muted" label="Output" value="~/.arguswiki/wiki" />
         <StatusLine
           tone="muted"
           label="Startup"
@@ -970,7 +970,7 @@ function ErrorDiagnosticsPanel({
   return (
     <Panel title="Error Diagnostics">
       <Text color="gray">
-        OPENWIKI_DEBUG=1 is enabled. Only allowlisted, non-secret error fields
+        ARGUSWIKI_DEBUG=1 is enabled. Only allowlisted, non-secret error fields
         are shown.
       </Text>
       {diagnostics.map((diagnostic) => (
@@ -996,7 +996,7 @@ function Header({
   const terminalColumns = process.stdout.columns ?? 80;
   const displayModelId = sanitizeHeaderValue(
     modelId ??
-      process.env[OPENWIKI_MODEL_ID_ENV_KEY] ??
+      process.env[ARGUSWIKI_MODEL_ID_ENV_KEY] ??
       getDefaultModelId(resolveConfiguredProvider()),
     Math.max(8, terminalColumns - 12),
   );
@@ -1007,7 +1007,7 @@ function Header({
     formatCwd(process.cwd()),
     Math.max(8, terminalColumns - 17),
   );
-  const shouldShowLogo = showLogo && terminalColumns > OPENWIKI_LOGO_WIDTH;
+  const shouldShowLogo = showLogo && terminalColumns > ARGUSWIKI_LOGO_WIDTH;
   const tracingEnabled =
     process.env.LANGCHAIN_TRACING_V2 === "true" &&
     Boolean(process.env.LANGSMITH_API_KEY);
@@ -1017,8 +1017,8 @@ function Header({
       <Box flexDirection="column" marginBottom={1}>
         <Text wrap="truncate">
           <Text color="cyan">{">_ "}</Text>
-          <Text bold>OpenWiki</Text>{" "}
-          <Text color="gray">v{OPENWIKI_VERSION}</Text>{" "}
+          <Text bold>ArgusWiki</Text>{" "}
+          <Text color="gray">v{ARGUSWIKI_VERSION}</Text>{" "}
           <Text color="gray">provider: </Text>
           <Text color="white">{displayProvider}</Text>{" "}
           {chatGptAccount ? (
@@ -1048,7 +1048,7 @@ function Header({
     <Box flexDirection="column" marginBottom={1}>
       {shouldShowLogo ? (
         <Box flexDirection="column" marginBottom={1}>
-          {OPENWIKI_LOGO_LINES.map((line) => (
+          {ARGUSWIKI_LOGO_LINES.map((line) => (
             <Text bold color="cyan" key={line} wrap="truncate">
               {line}
             </Text>
@@ -1064,8 +1064,8 @@ function Header({
       >
         <Text>
           <Text color="cyan">{">_ "}</Text>
-          <Text bold>OpenWiki</Text>{" "}
-          <Text color="gray">v{OPENWIKI_VERSION}</Text>{" "}
+          <Text bold>ArgusWiki</Text>{" "}
+          <Text color="gray">v{ARGUSWIKI_VERSION}</Text>{" "}
           <Text color="gray">agent docs for codebases</Text>
         </Text>
         <Text>
@@ -1131,7 +1131,7 @@ function StatusLine({ tone, label, value }: StatusLineProps) {
   );
 }
 
-function IngestionSummary({ result }: { result: OpenWikiIngestionResult }) {
+function IngestionSummary({ result }: { result: ArgusWikiIngestionResult }) {
   return (
     <Panel title="Source Runs">
       {result.results.map((sourceResult) => (
@@ -1147,7 +1147,7 @@ function IngestionSummary({ result }: { result: OpenWikiIngestionResult }) {
 }
 
 type RunViewProps = {
-  command: OpenWikiCommand;
+  command: ArgusWikiCommand;
   credentialDiagnostics?: CredentialDiagnostic[];
   log: RunLogItem[];
   done?: boolean;
@@ -1194,7 +1194,7 @@ function RunView({
         <Text>
           <Text color={done ? "green" : "cyan"}>* </Text>
           <Text bold>{done ? "Complete" : "Working"}</Text>{" "}
-          <Text color="gray">openwiki {command}</Text>
+          <Text color="gray">arguswiki {command}</Text>
           {!done ? <Text color="gray"> - streaming</Text> : null}
         </Text>
         <Box flexDirection="column" marginLeft={2} marginTop={1}>
@@ -1505,7 +1505,7 @@ function ChatHistory({ runs }: { runs: CompletedRun[] }) {
             <Text color="green">* </Text>
             <Text bold>Complete</Text>{" "}
             <Text color="gray">
-              openwiki {run.command} - {run.result.model}
+              arguswiki {run.command} - {run.result.model}
             </Text>
           </Text>
           <Box flexDirection="column" marginLeft={2} marginTop={1}>
@@ -1523,14 +1523,14 @@ function ChatHistory({ runs }: { runs: CompletedRun[] }) {
 
 type ChatInputProps = {
   currentModelId: string;
-  currentProvider: OpenWikiProvider;
+  currentProvider: ArgusWikiProvider;
   onClear: () => void;
   onCommandRun: (
-    command: Extract<OpenWikiCommand, "init" | "update">,
+    command: Extract<ArgusWikiCommand, "init" | "update">,
     message: string | null,
   ) => void;
   onModelSelect: (modelId: string) => Promise<void>;
-  onProviderSelect: (provider: OpenWikiProvider) => Promise<void>;
+  onProviderSelect: (provider: ArgusWikiProvider) => Promise<void>;
   onSubmit: (message: string) => void;
 };
 
@@ -1900,7 +1900,7 @@ function ChatInput({
   }
 
   async function selectProviderMenuOption(selectedIndex: number) {
-    const provider = SELECTABLE_OPENWIKI_PROVIDERS[selectedIndex];
+    const provider = SELECTABLE_ARGUSWIKI_PROVIDERS[selectedIndex];
 
     if (!provider) {
       setError("Select a provider.");
@@ -1915,7 +1915,7 @@ function ChatInput({
 
     if (provider === null) {
       setError(
-        `Enter a valid provider: ${SELECTABLE_OPENWIKI_PROVIDERS.join(", ")}.`,
+        `Enter a valid provider: ${SELECTABLE_ARGUSWIKI_PROVIDERS.join(", ")}.`,
       );
       return;
     }
@@ -1967,13 +1967,13 @@ function ChatInput({
 
     try {
       if (secretInputMode.kind === "langsmith-key") {
-        await saveOpenWikiEnv({
-          LANGCHAIN_PROJECT: nextValue.length > 0 ? "openwiki" : "",
+        await saveArgusWikiEnv({
+          LANGCHAIN_PROJECT: nextValue.length > 0 ? "arguswiki" : "",
           LANGCHAIN_TRACING_V2: nextValue.length > 0 ? "true" : "false",
           LANGSMITH_API_KEY: nextValue,
         });
       } else {
-        await saveOpenWikiEnv({
+        await saveArgusWikiEnv({
           [secretInputMode.envKey]: nextValue,
         });
       }
@@ -2076,7 +2076,7 @@ type SecretInputMode = {
   envKey: string;
   kind: "api-key" | "langsmith-key";
   label: string;
-  provider?: OpenWikiProvider;
+  provider?: ArgusWikiProvider;
 };
 
 type ChatInputMenuState =
@@ -2135,12 +2135,12 @@ const slashCommandOptions: SlashCommandOption[] = [
     label: "/langsmith-key",
   },
   {
-    description: "Run an initial OpenWiki documentation pass",
+    description: "Run an initial ArgusWiki documentation pass",
     id: "init",
     label: "/init",
   },
   {
-    description: "Update existing OpenWiki documentation",
+    description: "Update existing ArgusWiki documentation",
     id: "update",
     label: "/update",
   },
@@ -2155,7 +2155,7 @@ const slashCommandOptions: SlashCommandOption[] = [
     label: "/help",
   },
   {
-    description: "Exit OpenWiki",
+    description: "Exit ArgusWiki",
     id: "exit",
     label: "/exit",
   },
@@ -2168,7 +2168,7 @@ function SlashMenu({
   menuState,
 }: {
   currentModelId: string;
-  currentProvider: OpenWikiProvider;
+  currentProvider: ArgusWikiProvider;
   input: string;
   menuState: Exclude<ChatInputMenuState, { kind: "none" }>;
 }) {
@@ -2205,7 +2205,7 @@ function SlashMenu({
     return (
       <Box flexDirection="column" marginTop={1}>
         <Text color="gray">Providers</Text>
-        {SELECTABLE_OPENWIKI_PROVIDERS.map((provider, index) => (
+        {SELECTABLE_ARGUSWIKI_PROVIDERS.map((provider, index) => (
           <MenuRow
             description={
               provider === currentProvider
@@ -2385,7 +2385,7 @@ function syncMenuStateForInput(
   input: string,
   currentState: ChatInputMenuState,
   currentModelId: string,
-  currentProvider: OpenWikiProvider,
+  currentProvider: ArgusWikiProvider,
 ): ChatInputMenuState {
   if (input.startsWith("/provider")) {
     const selectedIndex =
@@ -2397,7 +2397,7 @@ function syncMenuStateForInput(
       kind: "provider",
       selectedIndex: clampMenuIndex(
         selectedIndex,
-        SELECTABLE_OPENWIKI_PROVIDERS.length,
+        SELECTABLE_ARGUSWIKI_PROVIDERS.length,
       ),
     };
   }
@@ -2436,7 +2436,7 @@ function moveMenuSelection(
   menuState: ChatInputMenuState,
   offset: number,
   currentModelId: string,
-  currentProvider: OpenWikiProvider,
+  currentProvider: ArgusWikiProvider,
 ): ChatInputMenuState {
   if (menuState.kind === "none") {
     return menuState;
@@ -2446,7 +2446,7 @@ function moveMenuSelection(
     menuState.kind === "model"
       ? getModelMenuOptions(currentModelId, currentProvider).length
       : menuState.kind === "provider"
-        ? SELECTABLE_OPENWIKI_PROVIDERS.length
+        ? SELECTABLE_ARGUSWIKI_PROVIDERS.length
         : slashCommandOptions.length;
 
   return {
@@ -2465,7 +2465,7 @@ function getCommandOptionIndex(input: string): number {
 
 function getCurrentModelOptionIndex(
   currentModelId: string,
-  currentProvider: OpenWikiProvider,
+  currentProvider: ArgusWikiProvider,
 ): number {
   const matchingIndex = getModelMenuOptions(
     currentModelId,
@@ -2478,9 +2478,9 @@ function getCurrentModelOptionIndex(
 }
 
 function getCurrentProviderOptionIndex(
-  currentProvider: OpenWikiProvider,
+  currentProvider: ArgusWikiProvider,
 ): number {
-  const matchingIndex = SELECTABLE_OPENWIKI_PROVIDERS.findIndex(
+  const matchingIndex = SELECTABLE_ARGUSWIKI_PROVIDERS.findIndex(
     (provider) => provider === currentProvider,
   );
 
@@ -2489,7 +2489,7 @@ function getCurrentProviderOptionIndex(
 
 function getModelMenuOptions(
   currentModelId: string,
-  currentProvider: OpenWikiProvider,
+  currentProvider: ArgusWikiProvider,
 ): ModelMenuOption[] {
   const modelIds = Array.from(
     new Set(
@@ -2595,7 +2595,7 @@ function updateRunningCredentialDiagnostics(
 
 function appendRunLogEvent(
   log: RunLogItem[],
-  event: OpenWikiRunEvent,
+  event: ArgusWikiRunEvent,
   nextLogId: React.MutableRefObject<number>,
 ): RunLogItem[] {
   if (event.type === "text" && event.source === "subgraph") {
@@ -2637,7 +2637,7 @@ function appendRunLogEvent(
 
 function appendToolStartLogItem(
   log: RunLogItem[],
-  event: Extract<OpenWikiRunEvent, { type: "tool_start" }>,
+  event: Extract<ArgusWikiRunEvent, { type: "tool_start" }>,
   nextLogId: React.MutableRefObject<number>,
 ): RunLogItem[] {
   const toolDisplay = createToolDisplay(event);
@@ -2691,7 +2691,7 @@ function appendToolStartLogItem(
 
 function completeToolLogItem(
   log: RunLogItem[],
-  event: Extract<OpenWikiRunEvent, { type: "tool_end" }>,
+  event: Extract<ArgusWikiRunEvent, { type: "tool_end" }>,
 ): RunLogItem[] {
   const matchingIndex = findLastToolLogItemIndex(log, event.id);
 
@@ -2706,7 +2706,7 @@ function completeToolLogItem(
 
 function completeToolGroupItem(
   item: RunLogItem,
-  event: Extract<OpenWikiRunEvent, { type: "tool_end" }>,
+  event: Extract<ArgusWikiRunEvent, { type: "tool_end" }>,
 ): RunLogItem {
   const actionCount = item.actionCount ?? 1;
   const activeToolCallIds = getActiveToolCallIds(item).filter(
@@ -2820,7 +2820,7 @@ type ToolDisplay = {
 };
 
 function createToolDisplay(
-  event: Extract<OpenWikiRunEvent, { type: "tool_start" }>,
+  event: Extract<ArgusWikiRunEvent, { type: "tool_start" }>,
 ): ToolDisplay {
   const input = parseToolInput(event.input);
   const variantIndex = pickVariantIndex(
@@ -3081,17 +3081,17 @@ function formatCwd(cwd: string): string {
 }
 
 function isDebugMode(): boolean {
-  return process.env.OPENWIKI_DEBUG === "1";
+  return process.env.ARGUSWIKI_DEBUG === "1";
 }
 
 function shouldShowCredentialDiagnostics(): boolean {
-  return isDebugMode() || process.env.OPENWIKI_DEBUG_CREDENTIALS === "1";
+  return isDebugMode() || process.env.ARGUSWIKI_DEBUG_CREDENTIALS === "1";
 }
 
 function getDisplayModelId(modelId: string | null): string {
   return (
     modelId ??
-    process.env[OPENWIKI_MODEL_ID_ENV_KEY] ??
+    process.env[ARGUSWIKI_MODEL_ID_ENV_KEY] ??
     getDefaultModelId(resolveConfiguredProvider())
   );
 }
@@ -3469,7 +3469,7 @@ if (
   parsedCommand.kind === "ingest" ||
   parsedCommand.kind === "ngrok"
 ) {
-  await loadOpenWikiEnv();
+  await loadArgusWikiEnv();
 }
 
 const command = await resolveStartupCommand(parsedCommand, {
@@ -3513,7 +3513,7 @@ async function runCronCommand(
   command: Extract<CliCommand, { kind: "cron" }>,
 ): Promise<void> {
   try {
-    const config = await readOpenWikiOnboardingConfig();
+    const config = await readArgusWikiOnboardingConfig();
 
     if (command.action !== "list") {
       if (!command.target) {
@@ -3531,7 +3531,7 @@ async function runCronCommand(
               })
             : await deleteConnectorSchedules(config, command.target);
 
-      await saveOpenWikiOnboardingConfig(result.config);
+      await saveArgusWikiOnboardingConfig(result.config);
       process.stdout.write(
         formatScheduleMutationResult(command.action, result),
       );
@@ -3549,7 +3549,7 @@ async function runCronCommand(
 }
 
 async function printCronSchedules(
-  config: Awaited<ReturnType<typeof readOpenWikiOnboardingConfig>>,
+  config: Awaited<ReturnType<typeof readArgusWikiOnboardingConfig>>,
 ): Promise<void> {
   const schedules = await listConnectorSchedules(config);
   const powerSchedule = getSavedPowerScheduleStatus(config);
@@ -3604,7 +3604,7 @@ function formatScheduleMutationResult(
 }
 
 function formatScheduleHeader(scheduleCount: number): string {
-  const title = "OpenWiki Schedules";
+  const title = "ArgusWiki Schedules";
   const summary =
     scheduleCount === 1
       ? "1 connector schedule configured"
@@ -3707,7 +3707,7 @@ async function runIngestCommand(
   command: Extract<CliCommand, { kind: "ingest" }>,
 ): Promise<void> {
   try {
-    const result = await runOpenWikiIngestion(process.cwd(), {
+    const result = await runArgusWikiIngestion(process.cwd(), {
       debug: isDebugMode(),
       modelId: command.modelId,
       scheduledOnly: command.scheduledOnly,
@@ -3827,13 +3827,13 @@ function shouldPrintStartupError(
 }
 
 function getRunModeCwd(
-  mode: OpenWikiRunMode,
+  mode: ArgusWikiRunMode,
   codeRuntimeCwd = process.cwd(),
 ): string {
-  return mode === "code" ? codeRuntimeCwd : openWikiLocalWikiDir;
+  return mode === "code" ? codeRuntimeCwd : argusWikiLocalWikiDir;
 }
 
-function getRunModeOutputMode(mode: OpenWikiRunMode): OpenWikiOutputMode {
+function getRunModeOutputMode(mode: ArgusWikiRunMode): ArgusWikiOutputMode {
   return mode === "code" ? "repository" : "local-wiki";
 }
 
@@ -3864,12 +3864,12 @@ async function runPrintCommand(
       await ensureCodeModeRepoSetup(runtimeCwd);
     }
 
-    await runOpenWikiAgent(command.command, runtimeCwd, {
+    await runArgusWikiAgent(command.command, runtimeCwd, {
       debug: isDebugMode(),
       isFollowup: command.command === "chat",
       modelId: command.modelId,
       outputMode: runtimeOutputMode,
-      threadId: createOpenWikiThreadId(runtimeCwd),
+      threadId: createArgusWikiThreadId(runtimeCwd),
       userMessage: command.userMessage,
       onEvent: (event) => {
         if (event.type === "text" && event.source !== "subgraph") {

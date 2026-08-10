@@ -1,5 +1,5 @@
 import { OPEN_WIKI_DIR } from "../../constants.js";
-import { OpenWikiCommand, RunContext, UpdateMetadata } from "../types.js";
+import { ArgusWikiCommand, RunContext, UpdateMetadata } from "../types.js";
 
 /**
  * Dedicated prompt builder for the claude-cli provider.
@@ -8,7 +8,7 @@ import { OpenWikiCommand, RunContext, UpdateMetadata } from "../types.js";
  * targets the spawned `claude` CLI's own native tools (Read/Write/Edit/Bash/
  * Grep/Glob) operating on real filesystem paths under the run's cwd, not
  * DeepAgents' virtual filesystem backend. It also has no connector tools
- * (openwiki_list_connectors, openwiki_ingest_connector, etc.) available, since
+ * (arguswiki_list_connectors, arguswiki_ingest_connector, etc.) available, since
  * those are LangChain tools specific to the DeepAgents runtime. v1 scope is
  * "repository" output mode only; "local-wiki" mode is not yet supported here.
  */
@@ -17,9 +17,9 @@ const QUICKSTART_PATH = `${DOCS_DIR}/quickstart.md`;
 const METADATA_PATH = `${DOCS_DIR}/.last-update.json`;
 const PLAN_PATH = `${DOCS_DIR}/_plan.md`;
 
-export function createClaudeCliSystemPrompt(command: OpenWikiCommand): string {
+export function createClaudeCliSystemPrompt(command: ArgusWikiCommand): string {
   return `
-You are OpenWiki, an expert technical writer and software architect, running as the \`claude\` CLI against a real checkout of the target repository.
+You are ArgusWiki, an expert technical writer and software architect, running as the \`claude\` CLI against a real checkout of the target repository.
 
 Your job is to inspect the repository's source evidence and existing documentation, then produce or update documentation under ${DOCS_DIR}/ that is excellent for both humans and future agents.
 
@@ -78,7 +78,7 @@ ${createClaudeCliModeInstructions(command)}
 `.trim();
 }
 
-function createClaudeCliModeInstructions(command: OpenWikiCommand): string {
+function createClaudeCliModeInstructions(command: ArgusWikiCommand): string {
   if (command === "chat") {
     return `
 - This is an interactive chat turn.
@@ -107,18 +107,18 @@ function createClaudeCliModeInstructions(command: OpenWikiCommand): string {
 }
 
 export function createClaudeCliUserPrompt(
-  command: OpenWikiCommand,
+  command: ArgusWikiCommand,
   context: RunContext,
   userMessage: string | null,
 ): string {
   if (command === "chat") {
-    return userMessage?.trim() || "Start an OpenWiki chat.";
+    return userMessage?.trim() || "Start an ArgusWiki chat.";
   }
 
   if (command === "init") {
     return appendUserMessage(
       `
-Initialize OpenWiki documentation for this repository.
+Initialize ArgusWiki documentation for this repository.
 
 Inspect the relevant evidence thoroughly, identify the major technical domains, and write the initial documentation under ${DOCS_DIR}/.
 
@@ -136,7 +136,7 @@ ${context.gitSummary}
 
   return appendUserMessage(
     `
-Update the existing OpenWiki documentation for this repository.
+Update the existing ArgusWiki documentation for this repository.
 
 Inspect ${DOCS_DIR}/, identify recent source changes, and refresh only the documentation pages directly affected by those changes. Use the git evidence below. Keep edits surgical: do not rewrite accurate sections or make formatting-only changes. If the docs are already current, do not edit files.
 
@@ -159,7 +159,7 @@ function formatWikiGoal(wikiGoal: string | undefined): string {
 
 function formatLastUpdate(lastUpdate: UpdateMetadata | null): string {
   if (lastUpdate === null) {
-    return "No previous OpenWiki update metadata was found.";
+    return "No previous ArgusWiki update metadata was found.";
   }
 
   return JSON.stringify(lastUpdate, null, 2);

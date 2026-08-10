@@ -1,5 +1,5 @@
 import { TavilySearch } from "@langchain/tavily";
-import { OPENWIKI_TAVILY_API_KEY_ENV_KEY } from "../../constants.js";
+import { ARGUSWIKI_TAVILY_API_KEY_ENV_KEY } from "../../constants.js";
 import {
   createRunId,
   readConnectorConfig,
@@ -42,7 +42,7 @@ const definition: ConnectorDefinition = {
     "Fetches web search results with Tavily through the LangChain Tavily integration.",
   displayName: "Web Search",
   id: "web-search",
-  requiredEnv: [OPENWIKI_TAVILY_API_KEY_ENV_KEY],
+  requiredEnv: [ARGUSWIKI_TAVILY_API_KEY_ENV_KEY],
   supportsAgenticDiscovery: false,
 };
 
@@ -78,23 +78,23 @@ async function ingest(
     return {
       connectorId: "web-search",
       message:
-        "Web Search connector is not enabled. Set enabled=true in ~/.openwiki/connectors/web-search/config.json.",
+        "Web Search connector is not enabled. Set enabled=true in ~/.arguswiki/connectors/web-search/config.json.",
       rawFiles,
       runId,
-      statePath: "~/.openwiki/connectors/web-search/state.json",
+      statePath: "~/.arguswiki/connectors/web-search/state.json",
       status: "skipped",
       warnings,
     };
   }
 
-  const tavilyApiKey = process.env[OPENWIKI_TAVILY_API_KEY_ENV_KEY];
+  const tavilyApiKey = process.env[ARGUSWIKI_TAVILY_API_KEY_ENV_KEY];
   if (!tavilyApiKey) {
     return {
       connectorId: "web-search",
-      message: `${OPENWIKI_TAVILY_API_KEY_ENV_KEY} is required for Web Search ingestion.`,
+      message: `${ARGUSWIKI_TAVILY_API_KEY_ENV_KEY} is required for Web Search ingestion.`,
       rawFiles,
       runId,
-      statePath: "~/.openwiki/connectors/web-search/state.json",
+      statePath: "~/.arguswiki/connectors/web-search/state.json",
       status: "error",
       warnings,
     };
@@ -105,10 +105,10 @@ async function ingest(
     return {
       connectorId: "web-search",
       message:
-        "No web search queries configured. Add queries to ~/.openwiki/connectors/web-search/config.json.",
+        "No web search queries configured. Add queries to ~/.arguswiki/connectors/web-search/config.json.",
       rawFiles,
       runId,
-      statePath: "~/.openwiki/connectors/web-search/state.json",
+      statePath: "~/.arguswiki/connectors/web-search/state.json",
       status: "skipped",
       warnings,
     };
@@ -169,7 +169,7 @@ async function ingest(
     }.`,
     rawFiles,
     runId,
-    statePath: "~/.openwiki/connectors/web-search/state.json",
+    statePath: "~/.arguswiki/connectors/web-search/state.json",
     status: "success",
     warnings,
   };

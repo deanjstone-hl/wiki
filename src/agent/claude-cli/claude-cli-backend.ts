@@ -5,7 +5,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { OPEN_WIKI_DIR } from "../../constants.js";
 import {
-  createOpenWikiContentSnapshot,
+  createArgusWikiContentSnapshot,
   createRunContext,
   persistRunMetadataIfChanged,
 } from "../utils.js";
@@ -14,9 +14,9 @@ import {
   createClaudeCliUserPrompt,
 } from "./prompt.js";
 import type {
-  OpenWikiCommand,
-  OpenWikiRunOptions,
-  OpenWikiRunResult,
+  ArgusWikiCommand,
+  ArgusWikiRunOptions,
+  ArgusWikiRunResult,
 } from "../types.js";
 
 /**
@@ -42,10 +42,10 @@ export interface ClaudeCliJsonResult {
 }
 
 export async function runClaudeCliAgent(
-  command: OpenWikiCommand,
+  command: ArgusWikiCommand,
   cwd: string,
-  options: OpenWikiRunOptions,
-): Promise<OpenWikiRunResult> {
+  options: ArgusWikiRunOptions,
+): Promise<ArgusWikiRunResult> {
   const outputMode = options.outputMode ?? "repository";
 
   if (outputMode !== "repository") {
@@ -58,7 +58,7 @@ export async function runClaudeCliAgent(
   const snapshotBefore =
     command === "chat"
       ? null
-      : await createOpenWikiContentSnapshot(cwd, outputMode);
+      : await createArgusWikiContentSnapshot(cwd, outputMode);
 
   const systemPrompt = createClaudeCliSystemPrompt(command);
   const userPrompt = createClaudeCliUserPrompt(
@@ -68,7 +68,7 @@ export async function runClaudeCliAgent(
   );
 
   const settingsDir = await mkdtemp(
-    path.join(tmpdir(), "openwiki-claude-cli-"),
+    path.join(tmpdir(), "arguswiki-claude-cli-"),
   );
 
   try {

@@ -109,10 +109,10 @@ export function isOpenRouterServerError(
  */
 export function getErrorMessage(error: unknown): string {
   const message =
-    error instanceof Error ? error.message : "OpenWiki agent run failed.";
+    error instanceof Error ? error.message : "ArgusWiki agent run failed.";
 
   if (isOpenRouterServerError(error, message)) {
-    return "OpenRouter/provider returned 500 Internal Server Error. Try retrying or switching models with /model. Run with OPENWIKI_DEBUG=1 to show provider metadata.";
+    return "OpenRouter/provider returned 500 Internal Server Error. Try retrying or switching models with /model. Run with ARGUSWIKI_DEBUG=1 to show provider metadata.";
   }
 
   return sanitizeDiagnosticText(message);

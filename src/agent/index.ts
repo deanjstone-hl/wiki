@@ -1,31 +1,31 @@
 import { createHash } from "node:crypto";
 import path from "node:path";
-import { DEBUG_ENV_KEYS, loadOpenWikiEnv, openWikiEnvDir } from "../env.js";
-import { openWikiLocalWikiDir } from "../openwiki-home.js";
+import { DEBUG_ENV_KEYS, loadArgusWikiEnv, argusWikiEnvDir } from "../env.js";
+import { argusWikiLocalWikiDir } from "../arguswiki-home.js";
 import { runClaudeCliAgent } from "./claude-cli/claude-cli-backend.js";
 import { syncBundledSkills } from "./skills.js";
 import type {
-  OpenWikiCommand,
-  OpenWikiRunOptions,
-  OpenWikiRunResult,
+  ArgusWikiCommand,
+  ArgusWikiRunOptions,
+  ArgusWikiRunResult,
 } from "./types.js";
 import {
   ANTHROPIC_BASE_URL_ENV_KEY,
   BEDROCK_AWS_REGION_ENV_KEY,
   OPENAI_COMPATIBLE_BASE_URL_ENV_KEY,
-  OPENWIKI_MODEL_ID_ENV_KEY,
-  OPENWIKI_PROVIDER_ENV_KEY,
-  OPENWIKI_PROVIDER_RETRY_ATTEMPTS_ENV_KEY,
+  ARGUSWIKI_MODEL_ID_ENV_KEY,
+  ARGUSWIKI_PROVIDER_ENV_KEY,
+  ARGUSWIKI_PROVIDER_RETRY_ATTEMPTS_ENV_KEY,
   resolveConfiguredProvider,
 } from "../constants.js";
 import { getUpdateNoopStatus, shouldCheckUpdateNoop } from "./utils.js";
 
-export async function runOpenWikiAgent(
-  command: OpenWikiCommand,
-  cwd = openWikiLocalWikiDir,
-  options: OpenWikiRunOptions = {},
-): Promise<OpenWikiRunResult> {
-  const runtimeCwd = options.outputMode ? cwd : openWikiLocalWikiDir;
+export async function runArgusWikiAgent(
+  command: ArgusWikiCommand,
+  cwd = argusWikiLocalWikiDir,
+  options: ArgusWikiRunOptions = {},
+): Promise<ArgusWikiRunResult> {
+  const runtimeCwd = options.outputMode ? cwd : argusWikiLocalWikiDir;
 
   emitDebug(options, `command=${command}`);
   emitDebug(options, `cwd=${runtimeCwd}`);
@@ -36,9 +36,9 @@ export async function runOpenWikiAgent(
   emitDebug(options, `userMessage.followup=${options.isFollowup === true}`);
   emitDebug(options, `env.beforeLoad ${formatEnvironmentDebug()}`);
 
-  await loadOpenWikiEnv();
+  await loadArgusWikiEnv();
   await syncBundledSkills();
-  emitDebug(options, "env=loaded ~/.openwiki/.env");
+  emitDebug(options, "env=loaded ~/.arguswiki/.env");
   emitDebug(options, `env.afterLoad ${formatEnvironmentDebug()}`);
 
   if (command === "update" && shouldCheckUpdateNoop(options)) {
@@ -46,7 +46,7 @@ export async function runOpenWikiAgent(
 
     if (noopStatus.shouldSkip) {
       const message =
-        "No repository changes detected since the last OpenWiki update; skipping agent run.";
+        "No repository changes detected since the last ArgusWiki update; skipping agent run.";
       emitDebug(options, `update.noop gitHead=${noopStatus.gitHead}`);
       options.onEvent?.({ type: "text", text: message });
 
@@ -68,7 +68,7 @@ export async function runOpenWikiAgent(
   return runClaudeCliAgent(command, runtimeCwd, options);
 }
 
-const checkpointPath = path.join(openWikiEnvDir, "openwiki.sqlite");
+const checkpointPath = path.join(argusWikiEnvDir, "arguswiki.sqlite");
 
 export type CheckpointTarget = {
   connString: string;
@@ -76,7 +76,7 @@ export type CheckpointTarget = {
 };
 
 export function resolveCheckpointTarget(
-  command: OpenWikiCommand,
+  command: ArgusWikiCommand,
 ): CheckpointTarget {
   if (command === "chat") {
     return {
@@ -91,14 +91,14 @@ export function resolveCheckpointTarget(
   };
 }
 
-export function createOpenWikiThreadId(cwd = process.cwd()): string {
+export function createArgusWikiThreadId(cwd = process.cwd()): string {
   return createThreadId(cwd, createRunThreadId());
 }
 
 function createThreadId(cwd: string, runId: string): string {
   const digest = createHash("sha256").update(path.resolve(cwd)).digest("hex");
 
-  return `openwiki-${digest.slice(0, 32)}-${runId}`;
+  return `arguswiki-${digest.slice(0, 32)}-${runId}`;
 }
 
 function createRunThreadId(): string {
@@ -107,7 +107,7 @@ function createRunThreadId(): string {
     .slice(2, 10)}`;
 }
 
-function emitDebug(options: OpenWikiRunOptions, message: string): void {
+function emitDebug(options: ArgusWikiRunOptions, message: string): void {
   if (!options.debug) {
     return;
   }
@@ -142,9 +142,9 @@ function formatDebugValue(key: string, value: string | undefined): string {
   }
 
   if (
-    key === OPENWIKI_MODEL_ID_ENV_KEY ||
-    key === OPENWIKI_PROVIDER_ENV_KEY ||
-    key === OPENWIKI_PROVIDER_RETRY_ATTEMPTS_ENV_KEY ||
+    key === ARGUSWIKI_MODEL_ID_ENV_KEY ||
+    key === ARGUSWIKI_PROVIDER_ENV_KEY ||
+    key === ARGUSWIKI_PROVIDER_RETRY_ATTEMPTS_ENV_KEY ||
     key === BEDROCK_AWS_REGION_ENV_KEY
   ) {
     return `set(value=${JSON.stringify(value)})`;

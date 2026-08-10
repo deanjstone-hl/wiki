@@ -1,10 +1,10 @@
 import { spawn } from "node:child_process";
 import type { ChildProcess } from "node:child_process";
-import { saveOpenWikiEnv } from "../env.js";
+import { saveArgusWikiEnv } from "../env.js";
 
 const DEFAULT_CALLBACK_PORT = 53682;
-const OAUTH_CALLBACK_PORT_ENV_KEY = "OPENWIKI_OAUTH_CALLBACK_PORT";
-const HTTPS_OAUTH_REDIRECT_URI_ENV_KEY = "OPENWIKI_HTTPS_OAUTH_REDIRECT_URI";
+const OAUTH_CALLBACK_PORT_ENV_KEY = "ARGUSWIKI_OAUTH_CALLBACK_PORT";
+const HTTPS_OAUTH_REDIRECT_URI_ENV_KEY = "ARGUSWIKI_HTTPS_OAUTH_REDIRECT_URI";
 const NGROK_API_URL = "http://127.0.0.1:4040/api/tunnels";
 const NGROK_DISCOVERY_TIMEOUT_MS = 15_000;
 const NGROK_DISCOVERY_POLL_MS = 500;
@@ -27,7 +27,7 @@ export async function startNgrokTunnel({
   const validatedPort = validatePort(port);
   const normalized = url ? normalizeNgrokUrl(url) : null;
 
-  await saveOpenWikiEnv(
+  await saveArgusWikiEnv(
     normalized
       ? {
           [OAUTH_CALLBACK_PORT_ENV_KEY]: String(validatedPort),
@@ -229,14 +229,14 @@ async function discoverAndSaveRandomNgrokRedirectUri(
     process.stdout.write(
       [
         "Could not discover the random ngrok URL from the local ngrok API.",
-        "After ngrok starts, copy the HTTPS forwarding URL, append /callback, register it in Slack, and set OPENWIKI_HTTPS_OAUTH_REDIRECT_URI to that callback URL.",
+        "After ngrok starts, copy the HTTPS forwarding URL, append /callback, register it in Slack, and set ARGUSWIKI_HTTPS_OAUTH_REDIRECT_URI to that callback URL.",
         "",
       ].join("\n"),
     );
     return;
   }
 
-  await saveOpenWikiEnv({
+  await saveArgusWikiEnv({
     [OAUTH_CALLBACK_PORT_ENV_KEY]: String(port),
     [HTTPS_OAUTH_REDIRECT_URI_ENV_KEY]: redirectUri,
   });

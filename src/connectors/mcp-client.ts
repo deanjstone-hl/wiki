@@ -1,5 +1,5 @@
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
-import { OPENWIKI_VERSION } from "../constants.js";
+import { ARGUSWIKI_VERSION } from "../constants.js";
 import {
   getOAuthAccessToken,
   getOAuthProviderIdForAccessTokenEnvKey,
@@ -446,8 +446,8 @@ class StdioJsonRpcClient {
     await this.request("initialize", {
       capabilities: {},
       clientInfo: {
-        name: "openwiki",
-        version: OPENWIKI_VERSION,
+        name: "arguswiki",
+        version: ARGUSWIKI_VERSION,
       },
       protocolVersion: "2025-06-18",
     });
@@ -592,8 +592,8 @@ class HttpJsonRpcClient {
     await this.request("initialize", {
       capabilities: {},
       clientInfo: {
-        name: "openwiki",
-        version: OPENWIKI_VERSION,
+        name: "arguswiki",
+        version: ARGUSWIKI_VERSION,
       },
       protocolVersion: "2025-06-18",
     });

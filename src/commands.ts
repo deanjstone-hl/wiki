@@ -1,5 +1,5 @@
 import { isValidModelId, normalizeModelId } from "./constants.js";
-import type { OpenWikiCommand } from "./agent/types.js";
+import type { ArgusWikiCommand } from "./agent/types.js";
 import { isAuthProviderId } from "./auth/providers.js";
 import type { AuthProviderId } from "./auth/types.js";
 import { parseIngestionTarget, type IngestionTarget } from "./ingestion.js";
@@ -9,7 +9,7 @@ export type HelpRow = {
   description: string;
 };
 
-export type OpenWikiRunMode = "personal" | "code";
+export type ArgusWikiRunMode = "personal" | "code";
 type CronTarget = Extract<IngestionTarget, string>;
 
 export type HelpContent = {
@@ -56,10 +56,10 @@ export type CliCommand =
   | {
       kind: "run";
       exitCode: 0;
-      command: OpenWikiCommand;
+      command: ArgusWikiCommand;
       dryRun: boolean;
-      mode: OpenWikiRunMode;
-      modeSource: OpenWikiRunModeSource;
+      mode: ArgusWikiRunMode;
+      modeSource: ArgusWikiRunModeSource;
       modelId: string | null;
       print: boolean;
       shouldStart: boolean;
@@ -71,7 +71,7 @@ export type CliCommand =
       message: string;
     };
 
-export type OpenWikiRunModeSource = "default" | "option" | "positional";
+export type ArgusWikiRunModeSource = "default" | "option" | "positional";
 
 export function parseCommand(argv: string[]): CliCommand {
   if (argv[0] === "--help" || argv[0] === "-h") {
@@ -120,9 +120,9 @@ export function parseCommand(argv: string[]): CliCommand {
         exitCode: 1,
         message:
           action === "configure"
-            ? "Usage: openwiki auth configure <provider> [--force]"
+            ? "Usage: arguswiki auth configure <provider> [--force]"
             : action === "tools"
-              ? "Usage: openwiki auth tools <provider>"
+              ? "Usage: arguswiki auth tools <provider>"
               : `Unknown auth provider: ${provider}`,
       };
     }
@@ -141,7 +141,7 @@ export function parseCommand(argv: string[]): CliCommand {
       return {
         kind: "error",
         exitCode: 1,
-        message: "Usage: openwiki ngrok start [url] [--port <port>]",
+        message: "Usage: arguswiki ngrok start [url] [--port <port>]",
       };
     }
 
@@ -206,7 +206,7 @@ export function parseCommand(argv: string[]): CliCommand {
         kind: "error",
         exitCode: 1,
         message:
-          "Usage: openwiki ingest <source|source-instance|all> [--print] [--modelId <id>]",
+          "Usage: arguswiki ingest <source|source-instance|all> [--print] [--modelId <id>]",
       };
     }
 
@@ -299,7 +299,7 @@ export function parseCommand(argv: string[]): CliCommand {
         return {
           kind: "error",
           exitCode: 1,
-          message: `Usage: openwiki cron ${argv[1]} <source|all>`,
+          message: `Usage: arguswiki cron ${argv[1]} <source|all>`,
         };
       }
 
@@ -316,12 +316,12 @@ export function parseCommand(argv: string[]): CliCommand {
         kind: "error",
         exitCode: 1,
         message:
-          "Usage: openwiki cron list | pause <source|all> | resume <source|all> | delete <source|all>",
+          "Usage: arguswiki cron list | pause <source|all> | resume <source|all> | delete <source|all>",
       };
     }
   }
 
-  if (isOpenWikiRunMode(argv[0])) {
+  if (isArgusWikiRunMode(argv[0])) {
     return parseRunCommand(argv.slice(1), argv[0], "positional");
   }
 
@@ -330,15 +330,15 @@ export function parseCommand(argv: string[]): CliCommand {
 
 function parseRunCommand(
   argv: string[],
-  initialMode: OpenWikiRunMode,
-  initialModeSource: OpenWikiRunModeSource,
+  initialMode: ArgusWikiRunMode,
+  initialModeSource: ArgusWikiRunModeSource,
 ): CliCommand {
   let dryRun = false;
   let mode = initialMode;
   let modeSource = initialModeSource;
   let modelId: string | null = null;
   let print = false;
-  let command: OpenWikiCommand = "chat";
+  let command: ArgusWikiCommand = "chat";
 
   const userMessageParts: string[] = [];
 
@@ -393,7 +393,7 @@ function parseRunCommand(
         };
       }
 
-      if (!isOpenWikiRunMode(nextArg)) {
+      if (!isArgusWikiRunMode(nextArg)) {
         return {
           kind: "error",
           exitCode: 1,
@@ -415,7 +415,7 @@ function parseRunCommand(
     if (arg.startsWith("--mode=")) {
       const [, rawMode = ""] = arg.split("=", 2);
 
-      if (!isOpenWikiRunMode(rawMode)) {
+      if (!isArgusWikiRunMode(rawMode)) {
         return {
           kind: "error",
           exitCode: 1,
@@ -484,11 +484,11 @@ function parseRunCommand(
     }
 
     // A mode word in the first positional slot selects the mode even when
-    // flags precede it (e.g. `openwiki --print code --update`), matching the
-    // `openwiki code ...` form. Otherwise it would silently become the user
+    // flags precede it (e.g. `arguswiki --print code --update`), matching the
+    // `arguswiki code ...` form. Otherwise it would silently become the user
     // message and the run would target the default personal wiki.
     if (
-      isOpenWikiRunMode(arg) &&
+      isArgusWikiRunMode(arg) &&
       modeSource === "default" &&
       userMessageParts.length === 0
     ) {
@@ -531,11 +531,11 @@ function parseRunCommand(
 }
 
 function resolveExplicitMode(
-  currentMode: OpenWikiRunMode,
-  modeSource: OpenWikiRunModeSource,
-  nextMode: OpenWikiRunMode,
+  currentMode: ArgusWikiRunMode,
+  modeSource: ArgusWikiRunModeSource,
+  nextMode: ArgusWikiRunMode,
 ):
-  | { kind: "ok"; mode: OpenWikiRunMode }
+  | { kind: "ok"; mode: ArgusWikiRunMode }
   | { kind: "error"; exitCode: 1; message: string } {
   if (currentMode === nextMode || modeSource === "default") {
     return { kind: "ok", mode: nextMode };
@@ -548,9 +548,9 @@ function resolveExplicitMode(
   };
 }
 
-function isOpenWikiRunMode(
+function isArgusWikiRunMode(
   value: string | undefined,
-): value is OpenWikiRunMode {
+): value is ArgusWikiRunMode {
   return value === "personal" || value === "code";
 }
 
@@ -574,88 +574,88 @@ export function shouldRunNonInteractively(
 
 export function isDevelopmentMode(): boolean {
   return (
-    process.env.NODE_ENV === "development" || process.env.OPENWIKI_DEV === "1"
+    process.env.NODE_ENV === "development" || process.env.ARGUSWIKI_DEV === "1"
   );
 }
 
 export const helpContent: HelpContent = {
-  title: "OpenWiki",
+  title: "ArgusWiki",
   description:
     "Run an agent that generates and maintains a project or local knowledge wiki.",
   usage: [
-    "openwiki [--init|--update] [message]",
-    "openwiki code [--init|--update] [message]",
-    "openwiki personal [--init|--update] [message]",
-    "openwiki --mode <personal|code> [--init|--update] [message]",
-    "openwiki [--modelId <model>]",
-    "openwiki [--modelId <model>] [message]",
-    "openwiki --update [message]",
-    "openwiki auth <provider>",
-    "openwiki auth configure <provider> [--force]",
-    "openwiki auth tools <provider>",
-    "openwiki ingest <source|source-instance|all>",
-    "openwiki cron list",
-    "openwiki cron pause <source|all>",
-    "openwiki cron resume <source|all>",
-    "openwiki cron delete <source|all>",
-    "openwiki ngrok start [url] [--port <port>]",
+    "arguswiki [--init|--update] [message]",
+    "arguswiki code [--init|--update] [message]",
+    "arguswiki personal [--init|--update] [message]",
+    "arguswiki --mode <personal|code> [--init|--update] [message]",
+    "arguswiki [--modelId <model>]",
+    "arguswiki [--modelId <model>] [message]",
+    "arguswiki --update [message]",
+    "arguswiki auth <provider>",
+    "arguswiki auth configure <provider> [--force]",
+    "arguswiki auth tools <provider>",
+    "arguswiki ingest <source|source-instance|all>",
+    "arguswiki cron list",
+    "arguswiki cron pause <source|all>",
+    "arguswiki cron resume <source|all>",
+    "arguswiki cron delete <source|all>",
+    "arguswiki ngrok start [url] [--port <port>]",
   ],
   commands: [
     {
-      label: "openwiki code",
+      label: "arguswiki code",
       description:
-        "Run OpenWiki for the current repository, writing docs under repo openwiki/ and using GitHub Actions for recurrence.",
+        "Run ArgusWiki for the current repository, writing docs under repo arguswiki/ and using GitHub Actions for recurrence.",
     },
     {
-      label: "openwiki personal",
+      label: "arguswiki personal",
       description:
-        "Run OpenWiki as your local personal brain over configured sources, writing to ~/.openwiki/wiki.",
+        "Run ArgusWiki as your local personal brain over configured sources, writing to ~/.arguswiki/wiki.",
     },
     {
-      label: "openwiki",
+      label: "arguswiki",
       description:
-        "Open the interactive OpenWiki code chat for the current repository.",
+        "Open the interactive ArgusWiki code chat for the current repository.",
     },
     {
-      label: "openwiki auth <provider>",
+      label: "arguswiki auth <provider>",
       description:
         "Authenticate, create connector config, and discover MCP tools when available.",
     },
     {
-      label: "openwiki auth configure <provider>",
+      label: "arguswiki auth configure <provider>",
       description:
         "Create local connector config that references saved auth env vars.",
     },
     {
-      label: "openwiki auth tools <provider>",
+      label: "arguswiki auth tools <provider>",
       description: "List available MCP tools for a configured auth provider.",
     },
     {
-      label: "openwiki ingest <source|source-instance|all>",
+      label: "arguswiki ingest <source|source-instance|all>",
       description:
         "Run ingestion and wiki update runs for one connector, one source instance, or all configured sources.",
     },
     {
-      label: "openwiki cron list",
+      label: "arguswiki cron list",
       description: "List saved connector schedules and local launchd status.",
     },
     {
-      label: "openwiki cron pause <source|all>",
+      label: "arguswiki cron pause <source|all>",
       description:
         "Pause saved connector schedules and reconcile the Mac wake window.",
     },
     {
-      label: "openwiki cron resume <source|all>",
+      label: "arguswiki cron resume <source|all>",
       description:
         "Resume paused connector schedules and reconcile the Mac wake window.",
     },
     {
-      label: "openwiki cron delete <source|all>",
+      label: "arguswiki cron delete <source|all>",
       description:
         "Delete saved connector schedules and remove stale local schedule files.",
     },
     {
-      label: "openwiki ngrok start [url]",
+      label: "arguswiki ngrok start [url]",
       description:
         "Start an ngrok tunnel for Slack OAuth, optionally using a fixed HTTPS URL.",
     },
@@ -664,12 +664,12 @@ export const helpContent: HelpContent = {
     {
       label: "--init",
       description:
-        "Generate initial OpenWiki documentation. Defaults to code mode; use personal to initialize the local personal brain.",
+        "Generate initial ArgusWiki documentation. Defaults to code mode; use personal to initialize the local personal brain.",
     },
     {
       label: "--update",
       description:
-        "Update existing OpenWiki documentation. Defaults to code mode; use personal to update the local personal brain.",
+        "Update existing ArgusWiki documentation. Defaults to code mode; use personal to update the local personal brain.",
     },
     {
       label: "--mode <personal|code>",
@@ -692,32 +692,32 @@ export const helpContent: HelpContent = {
     },
   ],
   examples: [
-    "openwiki",
-    "openwiki --init",
-    "openwiki personal --init",
-    "openwiki code --init",
-    "openwiki --update",
-    "openwiki --update --mode personal",
-    'openwiki "What can you do?"',
-    'openwiki -p "Summarize what OpenWiki can do"',
-    "openwiki --modelId gpt-5.5",
-    'openwiki --update --modelId gpt-5.5 "Please document the API routes first"',
-    'openwiki personal --update "Refresh the wiki from configured connectors"',
-    "openwiki ingest all",
-    "openwiki ingest web-search",
-    "openwiki ingest web-search-2",
-    "openwiki cron list",
-    "openwiki cron pause web-search",
-    "openwiki cron resume web-search",
-    "openwiki cron delete web-search",
-    "openwiki auth slack",
-    "openwiki auth gmail",
-    "openwiki auth notion",
-    "openwiki auth tools notion",
-    "openwiki ngrok start",
-    "openwiki ngrok start https://openwiki.ngrok.app",
+    "arguswiki",
+    "arguswiki --init",
+    "arguswiki personal --init",
+    "arguswiki code --init",
+    "arguswiki --update",
+    "arguswiki --update --mode personal",
+    'arguswiki "What can you do?"',
+    'arguswiki -p "Summarize what ArgusWiki can do"',
+    "arguswiki --modelId gpt-5.5",
+    'arguswiki --update --modelId gpt-5.5 "Please document the API routes first"',
+    'arguswiki personal --update "Refresh the wiki from configured connectors"',
+    "arguswiki ingest all",
+    "arguswiki ingest web-search",
+    "arguswiki ingest web-search-2",
+    "arguswiki cron list",
+    "arguswiki cron pause web-search",
+    "arguswiki cron resume web-search",
+    "arguswiki cron delete web-search",
+    "arguswiki auth slack",
+    "arguswiki auth gmail",
+    "arguswiki auth notion",
+    "arguswiki auth tools notion",
+    "arguswiki ngrok start",
+    "arguswiki ngrok start https://arguswiki.ngrok.app",
   ],
-  developmentExamples: ["openwiki --dry-run"],
+  developmentExamples: ["arguswiki --dry-run"],
 };
 
 export function getHelpText(): string {

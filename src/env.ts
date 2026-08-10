@@ -26,36 +26,36 @@ import {
   OPENAI_CHATGPT_REFRESH_TOKEN_ENV_KEY,
   OPENAI_COMPATIBLE_API_KEY_ENV_KEY,
   OPENAI_COMPATIBLE_BASE_URL_ENV_KEY,
-  OPENWIKI_GOOGLE_ACCESS_TOKEN_ENV_KEY,
-  OPENWIKI_GOOGLE_CLIENT_ID_ENV_KEY,
-  OPENWIKI_GOOGLE_CLIENT_SECRET_ENV_KEY,
-  OPENWIKI_GOOGLE_REFRESH_TOKEN_ENV_KEY,
-  OPENWIKI_GMAIL_ACCESS_TOKEN_ENV_KEY,
-  OPENWIKI_GMAIL_REFRESH_TOKEN_ENV_KEY,
-  OPENWIKI_NOTION_MCP_ACCESS_TOKEN_ENV_KEY,
-  OPENWIKI_NOTION_MCP_CLIENT_ID_ENV_KEY,
-  OPENWIKI_NOTION_MCP_REFRESH_TOKEN_ENV_KEY,
+  ARGUSWIKI_GOOGLE_ACCESS_TOKEN_ENV_KEY,
+  ARGUSWIKI_GOOGLE_CLIENT_ID_ENV_KEY,
+  ARGUSWIKI_GOOGLE_CLIENT_SECRET_ENV_KEY,
+  ARGUSWIKI_GOOGLE_REFRESH_TOKEN_ENV_KEY,
+  ARGUSWIKI_GMAIL_ACCESS_TOKEN_ENV_KEY,
+  ARGUSWIKI_GMAIL_REFRESH_TOKEN_ENV_KEY,
+  ARGUSWIKI_NOTION_MCP_ACCESS_TOKEN_ENV_KEY,
+  ARGUSWIKI_NOTION_MCP_CLIENT_ID_ENV_KEY,
+  ARGUSWIKI_NOTION_MCP_REFRESH_TOKEN_ENV_KEY,
   OPENROUTER_API_KEY_ENV_KEY,
-  OPENWIKI_NOTION_TOKEN_ENV_KEY,
-  OPENWIKI_SLACK_BOT_TOKEN_ENV_KEY,
-  OPENWIKI_SLACK_CLIENT_ID_ENV_KEY,
-  OPENWIKI_SLACK_CLIENT_SECRET_ENV_KEY,
-  OPENWIKI_SLACK_USER_TOKEN_ENV_KEY,
-  OPENWIKI_X_ACCESS_TOKEN_ENV_KEY,
-  OPENWIKI_X_CLIENT_ID_ENV_KEY,
-  OPENWIKI_X_CLIENT_SECRET_ENV_KEY,
-  OPENWIKI_X_REFRESH_TOKEN_ENV_KEY,
-  OPENWIKI_TAVILY_API_KEY_ENV_KEY,
-  OPENWIKI_MODEL_ID_ENV_KEY,
-  OPENWIKI_PROVIDER_ENV_KEY,
-  OPENWIKI_PROVIDER_RETRY_ATTEMPTS_ENV_KEY,
+  ARGUSWIKI_NOTION_TOKEN_ENV_KEY,
+  ARGUSWIKI_SLACK_BOT_TOKEN_ENV_KEY,
+  ARGUSWIKI_SLACK_CLIENT_ID_ENV_KEY,
+  ARGUSWIKI_SLACK_CLIENT_SECRET_ENV_KEY,
+  ARGUSWIKI_SLACK_USER_TOKEN_ENV_KEY,
+  ARGUSWIKI_X_ACCESS_TOKEN_ENV_KEY,
+  ARGUSWIKI_X_CLIENT_ID_ENV_KEY,
+  ARGUSWIKI_X_CLIENT_SECRET_ENV_KEY,
+  ARGUSWIKI_X_REFRESH_TOKEN_ENV_KEY,
+  ARGUSWIKI_TAVILY_API_KEY_ENV_KEY,
+  ARGUSWIKI_MODEL_ID_ENV_KEY,
+  ARGUSWIKI_PROVIDER_ENV_KEY,
+  ARGUSWIKI_PROVIDER_RETRY_ATTEMPTS_ENV_KEY,
   resolveProviderRetryAttempts,
 } from "./constants.js";
 import { isFileNotFoundError } from "./fs-errors.js";
 
-export const openWikiEnvDir =
-  process.env.OPENWIKI_HOME ?? path.join(os.homedir(), ".openwiki");
-export const openWikiEnvPath = path.join(openWikiEnvDir, ".env");
+export const argusWikiEnvDir =
+  process.env.ARGUSWIKI_HOME ?? path.join(os.homedir(), ".arguswiki");
+export const argusWikiEnvPath = path.join(argusWikiEnvDir, ".env");
 
 type EnvMap = Record<string, string>;
 
@@ -63,8 +63,8 @@ export type CredentialDiagnostic = {
   key: string;
   source:
     | "process.env"
-    | "~/.openwiki/.env"
-    | "process.env over ~/.openwiki/.env"
+    | "~/.arguswiki/.env"
+    | "process.env over ~/.arguswiki/.env"
     | "unset";
   length: number | null;
   preview: string;
@@ -72,8 +72,8 @@ export type CredentialDiagnostic = {
 };
 
 /**
- * Every environment variable OpenWiki reads or persists, in the order they are
- * written to `~/.openwiki/.env`. This is the single source of truth: the
+ * Every environment variable ArgusWiki reads or persists, in the order they are
+ * written to `~/.arguswiki/.env`. This is the single source of truth: the
  * credential diagnostics list and the agent's debug-dump key list are both
  * derived from it (see {@link CREDENTIAL_DIAGNOSTIC_ENV_KEYS} and
  * {@link DEBUG_ENV_KEYS}), so they cannot silently drift out of sync when a new
@@ -103,30 +103,30 @@ export const MANAGED_ENV_KEYS = [
   BEDROCK_AWS_ACCESS_KEY_ID_ENV_KEY,
   BEDROCK_AWS_SECRET_ACCESS_KEY_ENV_KEY,
   BEDROCK_AWS_REGION_ENV_KEY,
-  OPENWIKI_PROVIDER_ENV_KEY,
-  OPENWIKI_MODEL_ID_ENV_KEY,
-  OPENWIKI_PROVIDER_RETRY_ATTEMPTS_ENV_KEY,
-  OPENWIKI_NOTION_TOKEN_ENV_KEY,
-  OPENWIKI_NOTION_MCP_CLIENT_ID_ENV_KEY,
-  OPENWIKI_NOTION_MCP_ACCESS_TOKEN_ENV_KEY,
-  OPENWIKI_NOTION_MCP_REFRESH_TOKEN_ENV_KEY,
-  OPENWIKI_SLACK_BOT_TOKEN_ENV_KEY,
-  OPENWIKI_SLACK_CLIENT_ID_ENV_KEY,
-  OPENWIKI_SLACK_CLIENT_SECRET_ENV_KEY,
-  OPENWIKI_SLACK_USER_TOKEN_ENV_KEY,
-  OPENWIKI_GMAIL_ACCESS_TOKEN_ENV_KEY,
-  OPENWIKI_GMAIL_REFRESH_TOKEN_ENV_KEY,
-  OPENWIKI_GOOGLE_CLIENT_ID_ENV_KEY,
-  OPENWIKI_GOOGLE_CLIENT_SECRET_ENV_KEY,
-  OPENWIKI_GOOGLE_ACCESS_TOKEN_ENV_KEY,
-  OPENWIKI_GOOGLE_REFRESH_TOKEN_ENV_KEY,
-  OPENWIKI_X_CLIENT_ID_ENV_KEY,
-  OPENWIKI_X_CLIENT_SECRET_ENV_KEY,
-  OPENWIKI_X_ACCESS_TOKEN_ENV_KEY,
-  OPENWIKI_X_REFRESH_TOKEN_ENV_KEY,
-  OPENWIKI_TAVILY_API_KEY_ENV_KEY,
-  "OPENWIKI_HTTPS_OAUTH_REDIRECT_URI",
-  "OPENWIKI_OAUTH_CALLBACK_PORT",
+  ARGUSWIKI_PROVIDER_ENV_KEY,
+  ARGUSWIKI_MODEL_ID_ENV_KEY,
+  ARGUSWIKI_PROVIDER_RETRY_ATTEMPTS_ENV_KEY,
+  ARGUSWIKI_NOTION_TOKEN_ENV_KEY,
+  ARGUSWIKI_NOTION_MCP_CLIENT_ID_ENV_KEY,
+  ARGUSWIKI_NOTION_MCP_ACCESS_TOKEN_ENV_KEY,
+  ARGUSWIKI_NOTION_MCP_REFRESH_TOKEN_ENV_KEY,
+  ARGUSWIKI_SLACK_BOT_TOKEN_ENV_KEY,
+  ARGUSWIKI_SLACK_CLIENT_ID_ENV_KEY,
+  ARGUSWIKI_SLACK_CLIENT_SECRET_ENV_KEY,
+  ARGUSWIKI_SLACK_USER_TOKEN_ENV_KEY,
+  ARGUSWIKI_GMAIL_ACCESS_TOKEN_ENV_KEY,
+  ARGUSWIKI_GMAIL_REFRESH_TOKEN_ENV_KEY,
+  ARGUSWIKI_GOOGLE_CLIENT_ID_ENV_KEY,
+  ARGUSWIKI_GOOGLE_CLIENT_SECRET_ENV_KEY,
+  ARGUSWIKI_GOOGLE_ACCESS_TOKEN_ENV_KEY,
+  ARGUSWIKI_GOOGLE_REFRESH_TOKEN_ENV_KEY,
+  ARGUSWIKI_X_CLIENT_ID_ENV_KEY,
+  ARGUSWIKI_X_CLIENT_SECRET_ENV_KEY,
+  ARGUSWIKI_X_ACCESS_TOKEN_ENV_KEY,
+  ARGUSWIKI_X_REFRESH_TOKEN_ENV_KEY,
+  ARGUSWIKI_TAVILY_API_KEY_ENV_KEY,
+  "ARGUSWIKI_HTTPS_OAUTH_REDIRECT_URI",
+  "ARGUSWIKI_OAUTH_CALLBACK_PORT",
   "LANGSMITH_API_KEY",
   "LANGCHAIN_PROJECT",
   "LANGCHAIN_TRACING_V2",
@@ -146,16 +146,16 @@ const NON_CREDENTIAL_ENV_KEYS = new Set<string>([
  * credential key automatically appears in diagnostics.
  */
 export const CREDENTIAL_DIAGNOSTIC_ENV_KEYS: readonly string[] = [
-  OPENWIKI_PROVIDER_ENV_KEY,
+  ARGUSWIKI_PROVIDER_ENV_KEY,
   ...MANAGED_ENV_KEYS.filter(
     (key) =>
-      key !== OPENWIKI_PROVIDER_ENV_KEY && !NON_CREDENTIAL_ENV_KEYS.has(key),
+      key !== ARGUSWIKI_PROVIDER_ENV_KEY && !NON_CREDENTIAL_ENV_KEYS.has(key),
   ),
 ];
 
 /**
  * Keys dumped in the agent's environment debug line: every managed key plus the
- * LangChain endpoint override that OpenWiki reads but never persists. Derived
+ * LangChain endpoint override that ArgusWiki reads but never persists. Derived
  * from {@link MANAGED_ENV_KEYS} so it cannot drift.
  */
 export const DEBUG_ENV_KEYS: readonly string[] = [
@@ -167,8 +167,8 @@ const managedEnvKeys: readonly string[] = MANAGED_ENV_KEYS;
 
 const deprecatedEnvKeys = ["OPENAI_ORG_ID", "OPENAI_PROJECT"];
 
-export async function loadOpenWikiEnv(): Promise<EnvMap> {
-  const env = await readOpenWikiEnv();
+export async function loadArgusWikiEnv(): Promise<EnvMap> {
+  const env = await readArgusWikiEnv();
 
   for (const [key, value] of Object.entries(env)) {
     if (deprecatedEnvKeys.includes(key)) {
@@ -186,15 +186,15 @@ export async function loadOpenWikiEnv(): Promise<EnvMap> {
 export async function getCredentialDiagnostics(): Promise<
   CredentialDiagnostic[]
 > {
-  const fileEnv = await readOpenWikiEnv();
+  const fileEnv = await readArgusWikiEnv();
 
   return CREDENTIAL_DIAGNOSTIC_ENV_KEYS.map((key) =>
     createCredentialDiagnostic(key, fileEnv),
   );
 }
 
-export async function saveOpenWikiEnv(updates: EnvMap): Promise<void> {
-  const currentEnv = await readOpenWikiEnv();
+export async function saveArgusWikiEnv(updates: EnvMap): Promise<void> {
+  const currentEnv = await readArgusWikiEnv();
   const nextEnv = {
     ...currentEnv,
     ...updates,
@@ -204,17 +204,17 @@ export async function saveOpenWikiEnv(updates: EnvMap): Promise<void> {
     delete nextEnv[key];
   }
 
-  await mkdir(openWikiEnvDir, {
+  await mkdir(argusWikiEnvDir, {
     recursive: true,
     mode: 0o700,
   });
-  await chmod(openWikiEnvDir, 0o700);
+  await chmod(argusWikiEnvDir, 0o700);
 
-  await writeFile(openWikiEnvPath, formatEnv(nextEnv), {
+  await writeFile(argusWikiEnvPath, formatEnv(nextEnv), {
     encoding: "utf8",
     mode: 0o600,
   });
-  await chmod(openWikiEnvPath, 0o600);
+  await chmod(argusWikiEnvPath, 0o600);
 
   for (const [key, value] of Object.entries(updates)) {
     process.env[key] = value;
@@ -248,11 +248,11 @@ function createCredentialDiagnostic(
       ? JSON.stringify(value)
       : createCredentialPreview(value),
     warnings:
-      key === OPENWIKI_MODEL_ID_ENV_KEY
+      key === ARGUSWIKI_MODEL_ID_ENV_KEY
         ? getModelWarnings(value)
-        : key === OPENWIKI_PROVIDER_ENV_KEY
+        : key === ARGUSWIKI_PROVIDER_ENV_KEY
           ? getProviderWarnings(value)
-          : key === OPENWIKI_PROVIDER_RETRY_ATTEMPTS_ENV_KEY
+          : key === ARGUSWIKI_PROVIDER_RETRY_ATTEMPTS_ENV_KEY
             ? getRetryAttemptsWarnings(value)
             : getCredentialWarnings(value),
   };
@@ -263,7 +263,7 @@ function getCredentialSource(
   fileValue: string | undefined,
 ): CredentialDiagnostic["source"] {
   if (processValue !== undefined && fileValue !== undefined) {
-    return "process.env over ~/.openwiki/.env";
+    return "process.env over ~/.arguswiki/.env";
   }
 
   if (processValue !== undefined) {
@@ -271,7 +271,7 @@ function getCredentialSource(
   }
 
   if (fileValue !== undefined) {
-    return "~/.openwiki/.env";
+    return "~/.arguswiki/.env";
   }
 
   return "unset";
@@ -279,9 +279,9 @@ function getCredentialSource(
 
 function isNonSecretDiagnosticKey(key: string): boolean {
   return (
-    key === OPENWIKI_MODEL_ID_ENV_KEY ||
-    key === OPENWIKI_PROVIDER_ENV_KEY ||
-    key === OPENWIKI_PROVIDER_RETRY_ATTEMPTS_ENV_KEY ||
+    key === ARGUSWIKI_MODEL_ID_ENV_KEY ||
+    key === ARGUSWIKI_PROVIDER_ENV_KEY ||
+    key === ARGUSWIKI_PROVIDER_RETRY_ATTEMPTS_ENV_KEY ||
     key === ANTHROPIC_BASE_URL_ENV_KEY ||
     key === OPENAI_COMPATIBLE_BASE_URL_ENV_KEY ||
     key === BEDROCK_AWS_REGION_ENV_KEY ||
@@ -332,7 +332,7 @@ function getProviderWarnings(value: string): string[] {
 function getRetryAttemptsWarnings(value: string): string[] {
   try {
     resolveProviderRetryAttempts({
-      [OPENWIKI_PROVIDER_RETRY_ATTEMPTS_ENV_KEY]: value,
+      [ARGUSWIKI_PROVIDER_RETRY_ATTEMPTS_ENV_KEY]: value,
     });
 
     return [];
@@ -341,9 +341,9 @@ function getRetryAttemptsWarnings(value: string): string[] {
   }
 }
 
-async function readOpenWikiEnv(): Promise<EnvMap> {
+async function readArgusWikiEnv(): Promise<EnvMap> {
   try {
-    return parseEnv(await readFile(openWikiEnvPath, "utf8"));
+    return parseEnv(await readFile(argusWikiEnvPath, "utf8"));
   } catch (error) {
     if (isFileNotFoundError(error)) {
       return {};

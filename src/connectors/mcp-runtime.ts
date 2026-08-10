@@ -87,7 +87,7 @@ export async function callMcpConnectorTool(
 
   if (!tool) {
     throw new Error(
-      `MCP tool ${toolName} was not returned by tools/list for ${connectorId}. Run openwiki_list_mcp_tools first and use an exact discovered name.`,
+      `MCP tool ${toolName} was not returned by tools/list for ${connectorId}. Run arguswiki_list_mcp_tools first and use an exact discovered name.`,
     );
   }
 

@@ -1,4 +1,4 @@
-import { loadOpenWikiEnv, saveOpenWikiEnv } from "../env.js";
+import { loadArgusWikiEnv, saveArgusWikiEnv } from "../env.js";
 import { getAuthProvider } from "./providers.js";
 import type {
   AuthProviderId,
@@ -35,7 +35,7 @@ const REFRESH_EXPIRY_SKEW_MS = 60_000;
 export async function getOAuthAccessToken(
   providerId: AuthProviderId,
 ): Promise<string> {
-  await loadOpenWikiEnv();
+  await loadArgusWikiEnv();
 
   const provider = getAuthProvider(providerId);
   const accessToken = process.env[provider.tokenMapping.accessTokenEnvKey];
@@ -50,7 +50,7 @@ export async function getOAuthAccessToken(
 export async function refreshOAuthAccessToken(
   providerId: AuthProviderId,
 ): Promise<string> {
-  await loadOpenWikiEnv();
+  await loadArgusWikiEnv();
 
   const provider = getAuthProvider(providerId);
   const refreshTokenEnvKey = provider.tokenMapping.refreshTokenEnvKey;
@@ -112,7 +112,7 @@ export async function refreshOAuthAccessToken(
 
   const tokenResponse = (await response.json()) as TokenResponse;
   const updates = mapTokenResponse(provider, clientId, tokenResponse);
-  await saveOpenWikiEnv(updates);
+  await saveArgusWikiEnv(updates);
 
   return updates[provider.tokenMapping.accessTokenEnvKey];
 }

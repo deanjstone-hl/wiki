@@ -30,7 +30,7 @@ export function createConnectorRegistry(): Record<
         "Notion connector backed by the hosted Notion MCP server or another configured read-only MCP server.",
       displayName: "Notion",
       id: "notion",
-      requiredEnv: ["OPENWIKI_NOTION_MCP_ACCESS_TOKEN"],
+      requiredEnv: ["ARGUSWIKI_NOTION_MCP_ACCESS_TOKEN"],
     }),
     slack: createSlackConnector(),
     "web-search": createWebSearchConnector(),

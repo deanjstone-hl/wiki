@@ -1,9 +1,9 @@
 import { chmod, readFile, writeFile } from "node:fs/promises";
-import { OPENWIKI_NOTION_MCP_ACCESS_TOKEN_ENV_KEY } from "../constants.js";
+import { ARGUSWIKI_NOTION_MCP_ACCESS_TOKEN_ENV_KEY } from "../constants.js";
 import {
   ensureConnectorHome,
   getConnectorConfigPath,
-} from "../openwiki-home.js";
+} from "../arguswiki-home.js";
 import {
   discoverMcpConnectorTools,
   isMcpConnectorId,
@@ -71,7 +71,7 @@ export async function listAuthProviderTools(
 
   if (existing === null) {
     throw new Error(
-      `Connector config does not exist. Run openwiki auth ${provider} first.`,
+      `Connector config does not exist. Run arguswiki auth ${provider} first.`,
     );
   }
 
@@ -106,7 +106,7 @@ function getDefaultConfig(provider: AuthProviderId): unknown {
       readOnlyOperations: [],
       transport: {
         headers: {
-          Authorization: `Bearer \${${OPENWIKI_NOTION_MCP_ACCESS_TOKEN_ENV_KEY}}`,
+          Authorization: `Bearer \${${ARGUSWIKI_NOTION_MCP_ACCESS_TOKEN_ENV_KEY}}`,
         },
         type: "http",
         url: "https://mcp.notion.com/mcp",
@@ -143,7 +143,7 @@ function getDefaultConfig(provider: AuthProviderId): unknown {
         "Date",
         "Message-ID",
       ],
-      note: "Direct Gmail API ingestion. Tokens stay in ~/.openwiki/.env. query defaults to the last day of mail.",
+      note: "Direct Gmail API ingestion. Tokens stay in ~/.arguswiki/.env. query defaults to the last day of mail.",
       pageSize: 100,
       provider: "gmail",
       query: "newer_than:1d",
@@ -175,8 +175,8 @@ function getNextSteps(
   if (provider === "notion") {
     return [
       prefix,
-      "Run openwiki personal --update and the agent can discover and call read-only Notion MCP tools automatically.",
-      "Use openwiki auth tools notion only when you want to inspect the live MCP tool list yourself.",
+      "Run arguswiki personal --update and the agent can discover and call read-only Notion MCP tools automatically.",
+      "Use arguswiki auth tools notion only when you want to inspect the live MCP tool list yourself.",
     ];
   }
 
@@ -199,7 +199,7 @@ function getNextSteps(
   return [
     prefix,
     "Edit listIds if you want X list ingestion.",
-    "Run openwiki personal --update after auth and config are complete.",
+    "Run arguswiki personal --update after auth and config are complete.",
   ];
 }
 

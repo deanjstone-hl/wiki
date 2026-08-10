@@ -1,7 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import { execFile } from "node:child_process";
 import http from "node:http";
-import { loadOpenWikiEnv, saveOpenWikiEnv } from "../env.js";
+import { loadArgusWikiEnv, saveArgusWikiEnv } from "../env.js";
 import { getAuthProvider } from "./providers.js";
 import type {
   AuthProviderId,
@@ -36,8 +36,8 @@ type ProtectedResourceMetadata = {
 
 const CALLBACK_HOST = "127.0.0.1";
 const DEFAULT_CALLBACK_PORT = 53682;
-const OAUTH_CALLBACK_PORT_ENV_KEY = "OPENWIKI_OAUTH_CALLBACK_PORT";
-const HTTPS_OAUTH_REDIRECT_URI_ENV_KEY = "OPENWIKI_HTTPS_OAUTH_REDIRECT_URI";
+const OAUTH_CALLBACK_PORT_ENV_KEY = "ARGUSWIKI_OAUTH_CALLBACK_PORT";
+const HTTPS_OAUTH_REDIRECT_URI_ENV_KEY = "ARGUSWIKI_HTTPS_OAUTH_REDIRECT_URI";
 
 export type OAuthAuthOptions = {
   onAuthorizationUrl?: (event: {
@@ -53,7 +53,7 @@ export async function runOAuthAuth(
   providerId: AuthProviderId,
   options: OAuthAuthOptions = {},
 ): Promise<OAuthRunResult> {
-  await loadOpenWikiEnv();
+  await loadArgusWikiEnv();
   const provider = getAuthProvider(providerId);
   const callback = await createCallbackServer(provider);
   const state = createRandomUrlToken();
@@ -98,7 +98,7 @@ export async function runOAuthAuth(
       registration,
     });
     const updates = mapTokenResponse(provider, registration, tokenResponse);
-    await saveOpenWikiEnv(updates);
+    await saveArgusWikiEnv(updates);
 
     return {
       provider: provider.id,
@@ -118,11 +118,11 @@ export function formatAuthProviderList(): string {
     "  notion  Notion hosted MCP OAuth using dynamic client registration",
     "",
     "Run OAuth, create connector config, and discover MCP tools when available:",
-    "  openwiki auth <provider>",
+    "  arguswiki auth <provider>",
     "",
     "Advanced/retry commands:",
-    "  openwiki auth configure <provider>",
-    "  openwiki auth tools <provider>",
+    "  arguswiki auth configure <provider>",
+    "  arguswiki auth tools <provider>",
   ].join("\n");
 }
 
@@ -189,7 +189,7 @@ async function registerMcpOAuthClient(
 
   const registrationResponse = await fetch(authMetadata.registration_endpoint, {
     body: JSON.stringify({
-      client_name: "OpenWiki",
+      client_name: "ArgusWiki",
       grant_types: ["authorization_code", "refresh_token"],
       redirect_uris: [redirectUri],
       response_types: ["code"],
@@ -424,7 +424,7 @@ export async function createCallbackServer(
 
     if (error) {
       response.writeHead(400, getCallbackResponseHeaders());
-      response.end("OpenWiki authorization failed. You can close this tab.");
+      response.end("ArgusWiki authorization failed. You can close this tab.");
       rejectCode?.(new Error(`OAuth provider returned error: ${error}`));
       return;
     }
@@ -432,14 +432,14 @@ export async function createCallbackServer(
     if (!code || !state) {
       response.writeHead(400, getCallbackResponseHeaders());
       response.end(
-        "OpenWiki authorization callback was missing required data.",
+        "ArgusWiki authorization callback was missing required data.",
       );
       rejectCode?.(new Error("OAuth callback was missing code or state."));
       return;
     }
 
     response.writeHead(200, getCallbackResponseHeaders());
-    response.end("OpenWiki authorization complete. You can close this tab.");
+    response.end("ArgusWiki authorization complete. You can close this tab.");
     resolveCode?.(`${state}:${code}`);
   });
 

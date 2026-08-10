@@ -68,10 +68,10 @@ async function ingest(
     return {
       connectorId: "git-repo",
       message:
-        "No local repositories configured. Add repos to ~/.openwiki/connectors/git-repo/config.json.",
+        "No local repositories configured. Add repos to ~/.arguswiki/connectors/git-repo/config.json.",
       rawFiles,
       runId,
-      statePath: "~/.openwiki/connectors/git-repo/state.json",
+      statePath: "~/.arguswiki/connectors/git-repo/state.json",
       status: "skipped",
       warnings,
     };
@@ -121,7 +121,7 @@ async function ingest(
     message: `Wrote ${manifests.length} local git repo manifest(s).`,
     rawFiles,
     runId,
-    statePath: "~/.openwiki/connectors/git-repo/state.json",
+    statePath: "~/.arguswiki/connectors/git-repo/state.json",
     status: manifests.length > 0 ? "success" : "skipped",
     warnings,
   };

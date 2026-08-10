@@ -56,7 +56,7 @@ export async function resolveStartupCommand(
       return {
         kind: "error",
         exitCode: 1,
-        message: `${missingEnvKey} is required for non-interactive runs. Run openwiki in an interactive terminal to save credentials.${
+        message: `${missingEnvKey} is required for non-interactive runs. Run arguswiki in an interactive terminal to save credentials.${
           hint ? ` ${hint}` : ""
         }`,
       };

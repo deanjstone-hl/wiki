@@ -8,10 +8,10 @@ import path from "node:path";
 import {
   getConnectorConfigPath,
   getConnectorRawDir,
-  openWikiHomeDir,
-  openWikiLocalWikiDir,
+  argusWikiHomeDir,
+  argusWikiLocalWikiDir,
   resolveConnectorRawPath,
-} from "../openwiki-home.js";
+} from "../arguswiki-home.js";
 import { createConnectorRegistry, isConnectorId } from "./registry.js";
 import {
   callMcpConnectorTool,
@@ -20,12 +20,12 @@ import {
 } from "./mcp-runtime.js";
 import type { ConnectorId, ConnectorIngestOptions } from "./types.js";
 
-export function createOpenWikiConnectorTools(): StructuredToolInterface[] {
+export function createArgusWikiConnectorTools(): StructuredToolInterface[] {
   return [
     new DynamicStructuredTool({
-      name: "openwiki_list_connectors",
+      name: "arguswiki_list_connectors",
       description:
-        "List built-in OpenWiki connectors, their backends, required env var names, config paths, and raw data paths. Secret values are never returned.",
+        "List built-in ArgusWiki connectors, their backends, required env var names, config paths, and raw data paths. Secret values are never returned.",
       schema: {
         type: "object",
         properties: {},
@@ -34,9 +34,9 @@ export function createOpenWikiConnectorTools(): StructuredToolInterface[] {
       func: async () => stringifyToolResult(await listConnectors()),
     }),
     new DynamicStructuredTool({
-      name: "openwiki_list_mcp_tools",
+      name: "arguswiki_list_mcp_tools",
       description:
-        'List live MCP tools for a configured MCP connector and write discovery under ~/.openwiki/connectors/<id>/raw. Input: {"connectorId":"notion"}. Use exact returned tool names.',
+        'List live MCP tools for a configured MCP connector and write discovery under ~/.arguswiki/connectors/<id>/raw. Input: {"connectorId":"notion"}. Use exact returned tool names.',
       schema: {
         type: "object",
         properties: {
@@ -54,9 +54,9 @@ export function createOpenWikiConnectorTools(): StructuredToolInterface[] {
         ),
     }),
     new DynamicStructuredTool({
-      name: "openwiki_call_mcp_tool",
+      name: "arguswiki_call_mcp_tool",
       description:
-        'Call one exact discovered read-only MCP tool and write the result under ~/.openwiki/connectors/<id>/raw. Input: {"connectorId":"notion","toolName":"exact_tool_name","args":{"query":"Applied AI"}}.',
+        'Call one exact discovered read-only MCP tool and write the result under ~/.arguswiki/connectors/<id>/raw. Input: {"connectorId":"notion","toolName":"exact_tool_name","args":{"query":"Applied AI"}}.',
       schema: {
         type: "object",
         properties: {
@@ -85,9 +85,9 @@ export function createOpenWikiConnectorTools(): StructuredToolInterface[] {
         ),
     }),
     new DynamicStructuredTool({
-      name: "openwiki_ingest_connector",
+      name: "arguswiki_ingest_connector",
       description:
-        'Run deterministic ingestion for one built-in connector and write raw data/manifests under ~/.openwiki/connectors/<id>/raw. Input: {"connectorId":"x","streams":["bookmarks"],"limit":1}.',
+        'Run deterministic ingestion for one built-in connector and write raw data/manifests under ~/.arguswiki/connectors/<id>/raw. Input: {"connectorId":"x","streams":["bookmarks"],"limit":1}.',
       schema: {
         type: "object",
         properties: {
@@ -122,7 +122,7 @@ export function createOpenWikiConnectorTools(): StructuredToolInterface[] {
         ),
     }),
     new DynamicStructuredTool({
-      name: "openwiki_ingest_all_connectors",
+      name: "arguswiki_ingest_all_connectors",
       description:
         "Run deterministic ingestion for all configured built-in connectors. Connectors that are not configured or enabled are skipped.",
       schema: {
@@ -133,9 +133,9 @@ export function createOpenWikiConnectorTools(): StructuredToolInterface[] {
       func: async () => stringifyToolResult(await ingestAllConnectors()),
     }),
     new DynamicStructuredTool({
-      name: "openwiki_list_raw_items",
+      name: "arguswiki_list_raw_items",
       description:
-        'List raw files for a connector under ~/.openwiki/connectors/<id>/raw. Input: {"connectorId":"x"}.',
+        'List raw files for a connector under ~/.arguswiki/connectors/<id>/raw. Input: {"connectorId":"x"}.',
       schema: {
         type: "object",
         properties: {
@@ -161,9 +161,9 @@ export function createOpenWikiConnectorTools(): StructuredToolInterface[] {
         ),
     }),
     new DynamicStructuredTool({
-      name: "openwiki_read_raw_item",
+      name: "arguswiki_read_raw_item",
       description:
-        'Read a raw connector file by connector ID and relative path. Only files inside ~/.openwiki/connectors/<id>/raw are allowed. Input: {"connectorId":"x","path":"2026-.../bookmarks.json","maxBytes":50000}.',
+        'Read a raw connector file by connector ID and relative path. Only files inside ~/.arguswiki/connectors/<id>/raw are allowed. Input: {"connectorId":"x","path":"2026-.../bookmarks.json","maxBytes":50000}.',
       schema: {
         type: "object",
         properties: {
@@ -232,8 +232,8 @@ async function listConnectors() {
 
   return {
     note: "Secret values are never returned. requiredEnvStatus reports presence only.",
-    homeDir: openWikiHomeDir,
-    wikiDir: openWikiLocalWikiDir,
+    homeDir: argusWikiHomeDir,
+    wikiDir: argusWikiLocalWikiDir,
     connectors,
   };
 }

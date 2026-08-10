@@ -23,48 +23,48 @@ import {
   isValidModelId,
   normalizeProvider,
   normalizeModelId,
-  OPENWIKI_GOOGLE_CLIENT_ID_ENV_KEY,
-  OPENWIKI_GOOGLE_CLIENT_SECRET_ENV_KEY,
-  OPENWIKI_MODEL_ID_ENV_KEY,
-  OPENWIKI_PROVIDER_ENV_KEY,
-  OPENWIKI_TAVILY_API_KEY_ENV_KEY,
-  OPENWIKI_X_CLIENT_ID_ENV_KEY,
-  type OpenWikiProvider,
+  ARGUSWIKI_GOOGLE_CLIENT_ID_ENV_KEY,
+  ARGUSWIKI_GOOGLE_CLIENT_SECRET_ENV_KEY,
+  ARGUSWIKI_MODEL_ID_ENV_KEY,
+  ARGUSWIKI_PROVIDER_ENV_KEY,
+  ARGUSWIKI_TAVILY_API_KEY_ENV_KEY,
+  ARGUSWIKI_X_CLIENT_ID_ENV_KEY,
+  type ArgusWikiProvider,
   providerRequiresBaseUrl,
   providerRequiresRegion,
   providerRequiresSecretKey,
   resolveConfiguredProvider,
-  SELECTABLE_OPENWIKI_PROVIDERS,
+  SELECTABLE_ARGUSWIKI_PROVIDERS,
 } from "./constants.js";
 import type { AuthProviderId } from "./auth/types.js";
-import type { OpenWikiRunMode } from "./commands.js";
+import type { ArgusWikiRunMode } from "./commands.js";
 import type { ConnectorId } from "./connectors/types.js";
-import { getConnectorConfigPath } from "./openwiki-home.js";
-import { openWikiEnvPath, saveOpenWikiEnv } from "./env.js";
+import { getConnectorConfigPath } from "./arguswiki-home.js";
+import { argusWikiEnvPath, saveArgusWikiEnv } from "./env.js";
 import {
   createEmptyOnboardingConfig,
-  isOpenWikiOnboardingCompleteSync,
+  isArgusWikiOnboardingCompleteSync,
   isOnboardingComplete,
   isRepositoryCodeOnboardingCompleteSync,
-  openWikiOnboardingPath,
-  readOpenWikiOnboardingConfig,
+  argusWikiOnboardingPath,
+  readArgusWikiOnboardingConfig,
   readRepositoryWikiInstructions,
   saveRepositoryWikiInstructions,
-  saveOpenWikiOnboardingConfig,
-  type OpenWikiOnboardingConfig,
+  saveArgusWikiOnboardingConfig,
+  type ArgusWikiOnboardingConfig,
 } from "./onboarding.js";
 import {
   getSuggestedCronExpression,
-  installOpenWikiPowerSchedule,
+  installArgusWikiPowerSchedule,
   installConnectorSchedule,
   validateCronExpression,
 } from "./schedules.js";
 
 export type InitSetupResult = {
-  mode: OpenWikiRunMode;
+  mode: ArgusWikiRunMode;
   modelId: string | null;
   onboardingCompleted: boolean;
-  provider: OpenWikiProvider | null;
+  provider: ArgusWikiProvider | null;
   repoRoot?: string;
   runIngestionNow: boolean;
   savedApiKey: boolean;
@@ -81,7 +81,7 @@ export type InitSetupResult = {
 
 type InitSetupProps = {
   allowModeSelection?: boolean;
-  mode: OpenWikiRunMode;
+  mode: ArgusWikiRunMode;
   modelIdOverride?: string | null;
   onComplete: (result: InitSetupResult) => void;
   onError: (message: string) => void;
@@ -209,19 +209,19 @@ const ONBOARDING_TEMPLATES = [
 const RUN_MODE_OPTIONS = [
   {
     description:
-      "Build a local personal brain wiki in ~/.openwiki/wiki from configured sources.",
+      "Build a local personal brain wiki in ~/.arguswiki/wiki from configured sources.",
     id: "personal",
     name: "Personal",
   },
   {
     description:
-      "Build repository documentation in ./openwiki for this codebase.",
+      "Build repository documentation in ./arguswiki for this codebase.",
     id: "code",
     name: "Code",
   },
 ] as const satisfies readonly {
   description: string;
-  id: OpenWikiRunMode;
+  id: ArgusWikiRunMode;
   name: string;
 }[];
 
@@ -234,7 +234,7 @@ const SOURCE_OPTIONS = [
     ],
     id: "git-repo",
     instructions: [
-      "Choose the local repository directory OpenWiki should read.",
+      "Choose the local repository directory ArgusWiki should read.",
       "The default is the current working directory, and you can replace it with another path.",
       "You can add more repositories later in the connector config file.",
     ],
@@ -249,7 +249,7 @@ const SOURCE_OPTIONS = [
     ],
     id: "notion",
     instructions: [
-      "OpenWiki uses Notion's hosted MCP OAuth flow.",
+      "ArgusWiki uses Notion's hosted MCP OAuth flow.",
       "No client ID, client secret, or pasted Notion token is required.",
       "Approve access in the browser window when it opens.",
     ],
@@ -271,11 +271,11 @@ const SOURCE_OPTIONS = [
     ],
     secretInputs: [
       {
-        envKey: OPENWIKI_GOOGLE_CLIENT_ID_ENV_KEY,
+        envKey: ARGUSWIKI_GOOGLE_CLIENT_ID_ENV_KEY,
         label: "Google OAuth client ID",
       },
       {
-        envKey: OPENWIKI_GOOGLE_CLIENT_SECRET_ENV_KEY,
+        envKey: ARGUSWIKI_GOOGLE_CLIENT_SECRET_ENV_KEY,
         label: "Google OAuth client secret",
         secret: true,
       },
@@ -291,11 +291,11 @@ const SOURCE_OPTIONS = [
     instructions: [
       "Create a Tavily account and API key.",
       "Paste the Tavily API key below.",
-      "Describe the topics, companies, or pages OpenWiki should search for on the next screen.",
+      "Describe the topics, companies, or pages ArgusWiki should search for on the next screen.",
     ],
     secretInputs: [
       {
-        envKey: OPENWIKI_TAVILY_API_KEY_ENV_KEY,
+        envKey: ARGUSWIKI_TAVILY_API_KEY_ENV_KEY,
         label: "Tavily API key",
         secret: true,
       },
@@ -310,8 +310,8 @@ const SOURCE_OPTIONS = [
     id: "hackernews",
     instructions: [
       "No account setup is required for Hacker News.",
-      "OpenWiki uses public Hacker News feed and search APIs.",
-      "Describe the topics, keywords, users, or story types OpenWiki should watch on the next screen.",
+      "ArgusWiki uses public Hacker News feed and search APIs.",
+      "Describe the topics, keywords, users, or story types ArgusWiki should watch on the next screen.",
     ],
     secretInputs: [],
   },
@@ -331,7 +331,7 @@ const SOURCE_OPTIONS = [
     ],
     secretInputs: [
       {
-        envKey: OPENWIKI_X_CLIENT_ID_ENV_KEY,
+        envKey: ARGUSWIKI_X_CLIENT_ID_ENV_KEY,
         label: "X OAuth client ID",
       },
     ],
@@ -356,7 +356,7 @@ const CODE_REPO_OPTIONS = ["Confirm and continue", "Edit path"] as const;
 
 export function needsCredentialSetup(
   modelIdOverride: string | null = null,
-  mode: OpenWikiRunMode = "personal",
+  mode: ArgusWikiRunMode = "personal",
 ): boolean {
   const provider = resolveConfiguredProvider();
 
@@ -367,7 +367,7 @@ export function needsCredentialSetup(
     needsBaseUrlStep(provider) ||
     needsRegionStep(provider) ||
     (modelIdOverride === null &&
-      process.env[OPENWIKI_MODEL_ID_ENV_KEY] === undefined) ||
+      process.env[ARGUSWIKI_MODEL_ID_ENV_KEY] === undefined) ||
     process.env.LANGSMITH_API_KEY === undefined;
 
   if (needsCredentials) {
@@ -376,7 +376,7 @@ export function needsCredentialSetup(
 
   return mode === "code"
     ? !isRepositoryCodeOnboardingCompleteSync(getDefaultCodeRepoRootPath())
-    : !isOpenWikiOnboardingCompleteSync();
+    : !isArgusWikiOnboardingCompleteSync();
 }
 
 /**
@@ -384,22 +384,22 @@ export function needsCredentialSetup(
  * API-key providers it is a pasted key; for keyless providers
  * (gemini-enterprise) it is the required GCP project id.
  */
-function needsCredentialStep(provider: OpenWikiProvider): boolean {
+function needsCredentialStep(provider: ArgusWikiProvider): boolean {
   return getMissingProviderEnvKey(provider) !== null;
 }
 
 /** The step that collects the provider's primary credential. */
-function credentialStep(provider: OpenWikiProvider): PromptStep {
+function credentialStep(provider: ArgusWikiProvider): PromptStep {
   return providerRequiresApiKey(provider) ? "api-key" : "gcp-project";
 }
 
-function needsGcpProjectStep(provider: OpenWikiProvider): boolean {
+function needsGcpProjectStep(provider: ArgusWikiProvider): boolean {
   const projectEnvKey = getProviderProjectEnvKey(provider);
 
   return projectEnvKey ? !process.env[projectEnvKey] : false;
 }
 
-function needsBaseUrlStep(provider: OpenWikiProvider): boolean {
+function needsBaseUrlStep(provider: ArgusWikiProvider): boolean {
   if (!providerRequiresBaseUrl(provider)) {
     return false;
   }
@@ -407,13 +407,13 @@ function needsBaseUrlStep(provider: OpenWikiProvider): boolean {
   return !isBaseUrlConfigured(provider);
 }
 
-function isBaseUrlConfigured(provider: OpenWikiProvider): boolean {
+function isBaseUrlConfigured(provider: ArgusWikiProvider): boolean {
   const baseUrlEnvKey = getProviderBaseUrlEnvKey(provider);
 
   return baseUrlEnvKey ? Boolean(process.env[baseUrlEnvKey]) : false;
 }
 
-function needsSecretKeyStep(provider: OpenWikiProvider): boolean {
+function needsSecretKeyStep(provider: ArgusWikiProvider): boolean {
   if (!providerRequiresSecretKey(provider)) {
     return false;
   }
@@ -421,13 +421,13 @@ function needsSecretKeyStep(provider: OpenWikiProvider): boolean {
   return !isSecretKeyConfigured(provider);
 }
 
-function isSecretKeyConfigured(provider: OpenWikiProvider): boolean {
+function isSecretKeyConfigured(provider: ArgusWikiProvider): boolean {
   const secretKeyEnvKey = getProviderSecretKeyEnvKey(provider);
 
   return secretKeyEnvKey ? Boolean(process.env[secretKeyEnvKey]) : false;
 }
 
-function needsRegionStep(provider: OpenWikiProvider): boolean {
+function needsRegionStep(provider: ArgusWikiProvider): boolean {
   if (!providerRequiresRegion(provider)) {
     return false;
   }
@@ -435,23 +435,23 @@ function needsRegionStep(provider: OpenWikiProvider): boolean {
   return !isRegionConfigured(provider);
 }
 
-function isRegionConfigured(provider: OpenWikiProvider): boolean {
+function isRegionConfigured(provider: ArgusWikiProvider): boolean {
   const regionEnvKey = getProviderRegionEnvKey(provider);
 
   return regionEnvKey ? Boolean(process.env[regionEnvKey]) : false;
 }
 
-function isCredentialConfigured(provider: OpenWikiProvider): boolean {
+function isCredentialConfigured(provider: ArgusWikiProvider): boolean {
   return getMissingProviderEnvKey(provider) === null;
 }
 
-function getCredentialSetupDetail(provider: OpenWikiProvider): string {
+function getCredentialSetupDetail(provider: ArgusWikiProvider): string {
   const apiKeyEnvKey = getProviderApiKeyEnvKey(provider);
 
   return isCredentialConfigured(provider)
     ? "available from environment"
     : apiKeyEnvKey
-      ? `save ${apiKeyEnvKey} to ${openWikiEnvPath}`
+      ? `save ${apiKeyEnvKey} to ${argusWikiEnvPath}`
       : "configure Google Cloud credentials";
 }
 
@@ -465,8 +465,8 @@ export function InitSetup({
   const { stdout } = useStdout();
   const initialProvider = resolveConfiguredProvider();
   const [step, setStep] = useState<PromptStep | null>(null);
-  const [selectedMode, setSelectedMode] = useState<OpenWikiRunMode>(mode);
-  const [provider, setProvider] = useState<OpenWikiProvider>(initialProvider);
+  const [selectedMode, setSelectedMode] = useState<ArgusWikiRunMode>(mode);
+  const [provider, setProvider] = useState<ArgusWikiProvider>(initialProvider);
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [baseUrl, setBaseUrl] = useState<string | null>(null);
   const [secretKey, setSecretKey] = useState<string | null>(null);
@@ -477,7 +477,7 @@ export function InitSetup({
   const [langSmithKey, setLangSmithKey] = useState<string | null>(null);
   const [input, setInput] = useState("");
   const [onboardingConfig, setOnboardingConfig] =
-    useState<OpenWikiOnboardingConfig>(() => createEmptyOnboardingConfig());
+    useState<ArgusWikiOnboardingConfig>(() => createEmptyOnboardingConfig());
   const [sourceState, setSourceState] = useState<SourceSetupState>({
     secretValues: {},
   });
@@ -491,7 +491,7 @@ export function InitSetup({
     getModelSelectionIndex(
       initialProvider,
       modelIdOverride ??
-        process.env[OPENWIKI_MODEL_ID_ENV_KEY] ??
+        process.env[ARGUSWIKI_MODEL_ID_ENV_KEY] ??
         getDefaultModelId(initialProvider),
     ),
   );
@@ -539,7 +539,7 @@ export function InitSetup({
   useEffect(() => {
     let cancelled = false;
 
-    readOpenWikiOnboardingConfig()
+    readArgusWikiOnboardingConfig()
       .then(async (config) => {
         if (cancelled) {
           return;
@@ -554,7 +554,7 @@ export function InitSetup({
               defaultRepoRoot,
             );
         if (configForMode !== config) {
-          await saveOpenWikiOnboardingConfig({
+          await saveArgusWikiOnboardingConfig({
             ...configForMode,
             wikiGoal: mode === "code" ? undefined : configForMode.wikiGoal,
           });
@@ -572,7 +572,7 @@ export function InitSetup({
           onComplete({
             mode,
             modelId:
-              modelIdOverride ?? process.env[OPENWIKI_MODEL_ID_ENV_KEY] ?? null,
+              modelIdOverride ?? process.env[ARGUSWIKI_MODEL_ID_ENV_KEY] ?? null,
             onboardingCompleted: true,
             provider: initialProvider,
             runIngestionNow: false,
@@ -596,7 +596,7 @@ export function InitSetup({
           getModelSelectionIndex(
             initialProvider,
             modelIdOverride ??
-              process.env[OPENWIKI_MODEL_ID_ENV_KEY] ??
+              process.env[ARGUSWIKI_MODEL_ID_ENV_KEY] ??
               getDefaultModelId(initialProvider),
           ),
         );
@@ -642,7 +642,7 @@ export function InitSetup({
           moveSelectionIndex(
             index,
             key.upArrow ? -1 : 1,
-            SELECTABLE_OPENWIKI_PROVIDERS.length,
+            SELECTABLE_ARGUSWIKI_PROVIDERS.length,
           ),
         ),
       );
@@ -935,7 +935,7 @@ export function InitSetup({
 
     if (step === "provider") {
       const selectedProvider =
-        SELECTABLE_OPENWIKI_PROVIDERS[providerSelectionIndex] ??
+        SELECTABLE_ARGUSWIKI_PROVIDERS[providerSelectionIndex] ??
         DEFAULT_PROVIDER;
 
       setProvider(selectedProvider);
@@ -948,7 +948,7 @@ export function InitSetup({
       );
       setInput("");
       const providerChanged =
-        process.env[OPENWIKI_PROVIDER_ENV_KEY] !== selectedProvider;
+        process.env[ARGUSWIKI_PROVIDER_ENV_KEY] !== selectedProvider;
       setForceModelStep(providerChanged);
       const nextStep = getNextStepAfterProvider(
         selectedProvider,
@@ -1412,7 +1412,7 @@ export function InitSetup({
         return;
       }
 
-      await saveOpenWikiEnv(nextSecretValues);
+      await saveArgusWikiEnv(nextSecretValues);
       continueAfterSourceCredentialSetup(selectedSource);
       return;
     }
@@ -1527,7 +1527,7 @@ export function InitSetup({
         modelId:
           modelId ??
           modelIdOverride ??
-          process.env[OPENWIKI_MODEL_ID_ENV_KEY] ??
+          process.env[ARGUSWIKI_MODEL_ID_ENV_KEY] ??
           null,
         onboardingCompleted: true,
         provider,
@@ -1542,7 +1542,7 @@ export function InitSetup({
         savedGcpProject: gcpProject !== null,
         savedLangSmithKey: langSmithKey !== null && langSmithKey.length > 0,
         savedModelId: modelId !== null,
-        savedProvider: process.env[OPENWIKI_PROVIDER_ENV_KEY] !== provider,
+        savedProvider: process.env[ARGUSWIKI_PROVIDER_ENV_KEY] !== provider,
         savedRegion: region !== null,
         savedSecretKey: secretKey !== null,
         shouldContinueToRun: runIngestionNow,
@@ -1592,10 +1592,10 @@ export function InitSetup({
     nextGcpProject: string | null;
     nextLangSmithKey: string | null;
     nextModelId: string | null;
-    nextProvider: OpenWikiProvider;
+    nextProvider: ArgusWikiProvider;
     nextRegion: string | null;
     nextSecretKey: string | null;
-    runMode: OpenWikiRunMode;
+    runMode: ArgusWikiRunMode;
   };
 
   async function continueAfterCredentials(options: CompleteSetupOptions) {
@@ -1651,7 +1651,7 @@ export function InitSetup({
       modelId:
         options.nextModelId ??
         modelIdOverride ??
-        process.env[OPENWIKI_MODEL_ID_ENV_KEY] ??
+        process.env[ARGUSWIKI_MODEL_ID_ENV_KEY] ??
         null,
       onboardingCompleted: isOnboardingComplete(onboardingConfig),
       provider: options.nextProvider,
@@ -1672,7 +1672,7 @@ export function InitSetup({
         options.nextLangSmithKey.length > 0,
       savedModelId: options.nextModelId !== null,
       savedProvider:
-        process.env[OPENWIKI_PROVIDER_ENV_KEY] !== options.nextProvider,
+        process.env[ARGUSWIKI_PROVIDER_ENV_KEY] !== options.nextProvider,
       shouldContinueToRun: true,
     });
   }
@@ -1693,8 +1693,8 @@ export function InitSetup({
     try {
       const updates: Record<string, string> = {};
 
-      if (process.env[OPENWIKI_PROVIDER_ENV_KEY] !== nextProvider) {
-        updates[OPENWIKI_PROVIDER_ENV_KEY] = nextProvider;
+      if (process.env[ARGUSWIKI_PROVIDER_ENV_KEY] !== nextProvider) {
+        updates[ARGUSWIKI_PROVIDER_ENV_KEY] = nextProvider;
       }
 
       if (nextApiKey !== null) {
@@ -1746,25 +1746,25 @@ export function InitSetup({
       }
 
       if (nextModelId !== null) {
-        updates[OPENWIKI_MODEL_ID_ENV_KEY] = nextModelId;
+        updates[ARGUSWIKI_MODEL_ID_ENV_KEY] = nextModelId;
       }
 
       if (nextLangSmithKey !== null) {
         updates.LANGSMITH_API_KEY = nextLangSmithKey;
 
         if (nextLangSmithKey.length > 0) {
-          updates.LANGCHAIN_PROJECT = "openwiki";
+          updates.LANGCHAIN_PROJECT = "arguswiki";
           updates.LANGCHAIN_TRACING_V2 = "true";
         } else {
           // Blank input must act as an off switch: without this, a
           // LANGCHAIN_TRACING_V2=true saved by an earlier setup stays in
-          // ~/.openwiki/.env and tracing silently remains enabled.
+          // ~/.arguswiki/.env and tracing silently remains enabled.
           updates.LANGCHAIN_TRACING_V2 = "false";
         }
       }
 
       if (Object.keys(updates).length > 0) {
-        await saveOpenWikiEnv(updates);
+        await saveArgusWikiEnv(updates);
       }
     } catch (saveError) {
       onError(getErrorMessage(saveError));
@@ -1891,7 +1891,7 @@ export function InitSetup({
         cronExpression,
         cwd: process.cwd(),
       });
-      const nextConfig: OpenWikiOnboardingConfig = {
+      const nextConfig: ArgusWikiOnboardingConfig = {
         ...onboardingConfig,
         ingestionSchedule: {
           description: result.description,
@@ -1919,9 +1919,9 @@ export function InitSetup({
     setIsSaving(true);
 
     try {
-      const configForPower = await readOpenWikiOnboardingConfig();
-      const result = await installOpenWikiPowerSchedule(configForPower);
-      const nextConfig: OpenWikiOnboardingConfig = {
+      const configForPower = await readArgusWikiOnboardingConfig();
+      const result = await installArgusWikiPowerSchedule(configForPower);
+      const nextConfig: ArgusWikiOnboardingConfig = {
         ...configForPower,
         powerManagement: {
           ...configForPower.powerManagement,
@@ -1950,10 +1950,10 @@ export function InitSetup({
     }
   }
 
-  async function saveConfig(config: OpenWikiOnboardingConfig) {
+  async function saveConfig(config: ArgusWikiOnboardingConfig) {
     setIsSaving(true);
     try {
-      await saveOpenWikiOnboardingConfig(config);
+      await saveArgusWikiOnboardingConfig(config);
       setOnboardingConfig(config);
     } catch (saveError) {
       onError(getErrorMessage(saveError));
@@ -1962,7 +1962,7 @@ export function InitSetup({
     }
   }
 
-  async function saveConfigForCurrentMode(config: OpenWikiOnboardingConfig) {
+  async function saveConfigForCurrentMode(config: ArgusWikiOnboardingConfig) {
     if (!isCodeMode(config)) {
       await saveConfig(config);
       return;
@@ -1973,7 +1973,7 @@ export function InitSetup({
       if (config.wikiGoal?.trim()) {
         await saveRepositoryWikiInstructions(codeRepoRoot, config.wikiGoal);
       }
-      await saveOpenWikiOnboardingConfig({
+      await saveArgusWikiOnboardingConfig({
         ...config,
         wikiGoal: undefined,
       });
@@ -1992,7 +1992,7 @@ export function InitSetup({
     needsBaseUrlStep(provider) ||
     needsRegionStep(provider) ||
     (modelIdOverride === null &&
-      process.env[OPENWIKI_MODEL_ID_ENV_KEY] === undefined) ||
+      process.env[ARGUSWIKI_MODEL_ID_ENV_KEY] === undefined) ||
     process.env.LANGSMITH_API_KEY === undefined;
   const apiKeyEnvKey = getProviderApiKeyEnvKey(provider);
   const projectEnvKey = getProviderProjectEnvKey(provider);
@@ -2040,7 +2040,7 @@ export function InitSetup({
             detail={
               isSecretKeyConfigured(provider)
                 ? "available from environment"
-                : `save ${getProviderSecretKeyEnvKey(provider)} to ${openWikiEnvPath}`
+                : `save ${getProviderSecretKeyEnvKey(provider)} to ${argusWikiEnvPath}`
             }
           />
         ) : null}
@@ -2057,7 +2057,7 @@ export function InitSetup({
             detail={
               process.env[projectEnvKey]
                 ? "available from environment"
-                : `save ${projectEnvKey} to ${openWikiEnvPath}`
+                : `save ${projectEnvKey} to ${argusWikiEnvPath}`
             }
           />
         ) : null}
@@ -2091,7 +2091,7 @@ export function InitSetup({
             detail={
               isBaseUrlConfigured(provider)
                 ? "available from environment"
-                : `save ${getProviderBaseUrlEnvKey(provider)} to ${openWikiEnvPath}`
+                : `save ${getProviderBaseUrlEnvKey(provider)} to ${argusWikiEnvPath}`
             }
           />
         ) : null}
@@ -2108,14 +2108,14 @@ export function InitSetup({
             detail={
               isRegionConfigured(provider)
                 ? "available from environment"
-                : `save ${getProviderRegionEnvKey(provider)} to ${openWikiEnvPath}`
+                : `save ${getProviderRegionEnvKey(provider)} to ${argusWikiEnvPath}`
             }
           />
         ) : null}
         <SetupStep
           label="Model"
           state={
-            modelIdOverride || process.env[OPENWIKI_MODEL_ID_ENV_KEY]
+            modelIdOverride || process.env[ARGUSWIKI_MODEL_ID_ENV_KEY]
               ? "done"
               : step === "model"
                 ? "current"
@@ -2175,10 +2175,10 @@ export function InitSetup({
           }
           detail={
             selectedMode === "code"
-              ? "repository openwiki/"
+              ? "repository arguswiki/"
               : onboardingConfig.wikiGoal
                 ? "saved"
-                : `save onboarding profile to ${openWikiOnboardingPath}`
+                : `save onboarding profile to ${argusWikiOnboardingPath}`
           }
         />
         {selectedMode === "personal" ? (
@@ -2247,7 +2247,7 @@ export function InitSetup({
             templateSelectionIndex={templateSelectionIndex}
           />
         ) : (
-          <Text>Inspecting OpenWiki setup...</Text>
+          <Text>Inspecting ArgusWiki setup...</Text>
         )}
       </SetupPanel>
 
@@ -2271,7 +2271,7 @@ export function InitSetup({
       ) : null}
       {isSaving ? (
         <SetupPanel title="Saving">
-          <Text>Writing OpenWiki setup...</Text>
+          <Text>Writing ArgusWiki setup...</Text>
         </SetupPanel>
       ) : null}
       {isAuthRunning ? (
@@ -2320,13 +2320,13 @@ function Prompt({
   inputDisplayWidth: number;
   isCustomModelInput: boolean;
   modelSelectionIndex: number;
-  onboardingConfig: OpenWikiOnboardingConfig;
+  onboardingConfig: ArgusWikiOnboardingConfig;
   powerModeSelectionIndex: number;
-  provider: OpenWikiProvider;
+  provider: ArgusWikiProvider;
   providerSelectionIndex: number;
   runModeSelectionIndex: number;
   secretInputIndex: number;
-  selectedMode: OpenWikiRunMode;
+  selectedMode: ArgusWikiRunMode;
   selectedSource: SourceSetupOption;
   sourceOptions: readonly SourceSetupOption[];
   sourceContinueSelectionIndex: number;
@@ -2344,7 +2344,7 @@ function Prompt({
 
     return (
       <Box flexDirection="column">
-        <Text>Choose what OpenWiki should initialize.</Text>
+        <Text>Choose what ArgusWiki should initialize.</Text>
         {RUN_MODE_OPTIONS.map((option, index) => (
           <Text key={option.id}>
             <SelectionMarker isSelected={index === runModeSelectionIndex} />{" "}
@@ -2364,7 +2364,7 @@ function Prompt({
     return (
       <Box flexDirection="column">
         <Text>Choose a model provider.</Text>
-        {SELECTABLE_OPENWIKI_PROVIDERS.map((providerOption, index) => (
+        {SELECTABLE_ARGUSWIKI_PROVIDERS.map((providerOption, index) => (
           <Text key={providerOption}>
             <SelectionMarker isSelected={index === providerSelectionIndex} />{" "}
             {getProviderLabel(providerOption)}
@@ -2420,7 +2420,7 @@ function Prompt({
           <Text color="yellow">{input}</Text>
         </Text>
         <Text color="gray">
-          OpenWiki authenticates with Google Application Default Credentials
+          ArgusWiki authenticates with Google Application Default Credentials
           (run: gcloud auth application-default login). Press Enter to save it.
         </Text>
       </Box>
@@ -2483,7 +2483,7 @@ function Prompt({
           <BorderedInput
             maxDisplayWidth={inputDisplayWidth}
             marginTop={1}
-            prefix={`${OPENWIKI_MODEL_ID_ENV_KEY}=`}
+            prefix={`${ARGUSWIKI_MODEL_ID_ENV_KEY}=`}
             value={input}
           />
           <Text color="gray">Press Enter to save it.</Text>
@@ -2544,7 +2544,7 @@ function Prompt({
 
     return (
       <Box flexDirection="column">
-        <Text>Choose how OpenWiki should run.</Text>
+        <Text>Choose how ArgusWiki should run.</Text>
         {ONBOARDING_TEMPLATES.map((template, index) => (
           <Text key={template.id}>
             <SelectionMarker isSelected={index === templateSelectionIndex} />{" "}
@@ -2599,7 +2599,7 @@ function Prompt({
           <Text color="cyan">{codeRepoRoot}</Text>
         </Box>
         <Text color="gray">
-          OpenWiki will run in this directory and write the initial openwiki/
+          ArgusWiki will run in this directory and write the initial arguswiki/
           folder there.
         </Text>
         <Box flexDirection="column" marginTop={1}>
@@ -2620,7 +2620,7 @@ function Prompt({
       <Box flexDirection="column">
         <Text>Choose the repository directory.</Text>
         <Text color="gray">
-          Enter an existing directory. OpenWiki will write openwiki/ there.
+          Enter an existing directory. ArgusWiki will write arguswiki/ there.
         </Text>
         <BorderedInput
           maxDisplayWidth={inputDisplayWidth}
@@ -2688,7 +2688,7 @@ function Prompt({
       <Box flexDirection="column">
         <Text>Choose the local Git repository directory.</Text>
         <Text color="gray">
-          Default is the directory where you started OpenWiki. Edit it to use a
+          Default is the directory where you started ArgusWiki. Edit it to use a
           different checkout.
         </Text>
         <BorderedInput
@@ -2785,7 +2785,7 @@ function Prompt({
       <Box flexDirection="column">
         <Text>{getSourceDescriptionPrompt(selectedSource)}</Text>
         <Text color="gray">
-          Type what OpenWiki should focus on for this source.
+          Type what ArgusWiki should focus on for this source.
         </Text>
         <BorderedMultilineInput
           maxDisplayWidth={inputDisplayWidth}
@@ -2803,11 +2803,11 @@ function Prompt({
         <Text>
           {isCodeMode(onboardingConfig)
             ? "When should GitHub Actions refresh this code wiki?"
-            : "When should OpenWiki run all ingestion?"}
+            : "When should ArgusWiki run all ingestion?"}
         </Text>
         <Text color="gray">
           {isCodeMode(onboardingConfig)
-            ? "OpenWiki will write a scheduled GitHub Actions workflow for this repository."
+            ? "ArgusWiki will write a scheduled GitHub Actions workflow for this repository."
             : "All configured sources run sequentially at this time."}
         </Text>
         <Text color="gray">Suggested: {suggestedCronDescription}</Text>
@@ -2858,7 +2858,7 @@ function Prompt({
       <Box flexDirection="column">
         <Text>Keep your Mac awake for scheduled refreshes?</Text>
         <Text color="gray">
-          OpenWiki can use macOS pmset to wake 2 minutes before the shared
+          ArgusWiki can use macOS pmset to wake 2 minutes before the shared
           ingestion schedule and sleep 30 minutes after it.
         </Text>
         {sourceState.savedScheduleWarning ? (
@@ -2922,7 +2922,7 @@ function Prompt({
         })}
         <Text color="gray">
           {selectedMode === "code"
-            ? "Run now writes the initial openwiki/ directory. Open chat skips the initial run."
+            ? "Run now writes the initial arguswiki/ directory. Open chat skips the initial run."
             : "Run now executes one source-specific ingestion and wiki update per configured source. Run later opens chat so you can start ingestion when you are ready."}
         </Text>
       </Box>
@@ -2943,7 +2943,7 @@ function SetupHeader() {
     >
       <Text>
         <Text bold color="cyan">
-          OpenWiki
+          ArgusWiki
         </Text>{" "}
         <Text color="gray">first-run setup</Text>
       </Text>
@@ -3231,9 +3231,9 @@ function SegmentedCronInput({
 
 export function getInitialStep(
   modelIdOverride: string | null,
-  provider: OpenWikiProvider,
-  onboardingConfig: OpenWikiOnboardingConfig = createEmptyOnboardingConfig(),
-  mode: OpenWikiRunMode = "code",
+  provider: ArgusWikiProvider,
+  onboardingConfig: ArgusWikiOnboardingConfig = createEmptyOnboardingConfig(),
+  mode: ArgusWikiRunMode = "code",
   allowModeSelection = false,
 ): PromptStep | null {
   if (allowModeSelection) {
@@ -3266,7 +3266,7 @@ export function getInitialStep(
 
   if (
     modelIdOverride === null &&
-    process.env[OPENWIKI_MODEL_ID_ENV_KEY] === undefined
+    process.env[ARGUSWIKI_MODEL_ID_ENV_KEY] === undefined
   ) {
     return "model";
   }
@@ -3299,10 +3299,10 @@ export function getInitialStep(
 }
 
 export function getNextStepAfterProvider(
-  provider: OpenWikiProvider,
+  provider: ArgusWikiProvider,
   modelIdOverride: string | null,
-  onboardingConfig: OpenWikiOnboardingConfig = createEmptyOnboardingConfig(),
-  mode: OpenWikiRunMode = "code",
+  onboardingConfig: ArgusWikiOnboardingConfig = createEmptyOnboardingConfig(),
+  mode: ArgusWikiRunMode = "code",
   forceModelStep = false,
 ): PromptStep | null {
   if (needsCredentialStep(provider)) {
@@ -3319,10 +3319,10 @@ export function getNextStepAfterProvider(
 }
 
 function getNextStepAfterApiKey(
-  provider: OpenWikiProvider,
+  provider: ArgusWikiProvider,
   modelIdOverride: string | null,
-  onboardingConfig: OpenWikiOnboardingConfig,
-  mode: OpenWikiRunMode,
+  onboardingConfig: ArgusWikiOnboardingConfig,
+  mode: ArgusWikiRunMode,
   forceModelStep = false,
 ): PromptStep | null {
   if (needsSecretKeyStep(provider)) {
@@ -3339,10 +3339,10 @@ function getNextStepAfterApiKey(
 }
 
 function getNextStepAfterSecretKey(
-  provider: OpenWikiProvider,
+  provider: ArgusWikiProvider,
   modelIdOverride: string | null,
-  onboardingConfig: OpenWikiOnboardingConfig,
-  mode: OpenWikiRunMode,
+  onboardingConfig: ArgusWikiOnboardingConfig,
+  mode: ArgusWikiRunMode,
   forceModelStep = false,
 ): PromptStep | null {
   if (needsGcpProjectStep(provider)) {
@@ -3359,10 +3359,10 @@ function getNextStepAfterSecretKey(
 }
 
 function getNextStepAfterGcpLocation(
-  provider: OpenWikiProvider,
+  provider: ArgusWikiProvider,
   modelIdOverride: string | null,
-  onboardingConfig: OpenWikiOnboardingConfig = createEmptyOnboardingConfig(),
-  mode: OpenWikiRunMode = "code",
+  onboardingConfig: ArgusWikiOnboardingConfig = createEmptyOnboardingConfig(),
+  mode: ArgusWikiRunMode = "code",
   forceModelStep = false,
 ): PromptStep | null {
   if (needsBaseUrlStep(provider)) {
@@ -3379,10 +3379,10 @@ function getNextStepAfterGcpLocation(
 }
 
 function getNextStepAfterBaseUrl(
-  provider: OpenWikiProvider,
+  provider: ArgusWikiProvider,
   modelIdOverride: string | null,
-  onboardingConfig: OpenWikiOnboardingConfig,
-  mode: OpenWikiRunMode,
+  onboardingConfig: ArgusWikiOnboardingConfig,
+  mode: ArgusWikiRunMode,
   forceModelStep = false,
 ): PromptStep | null {
   if (needsRegionStep(provider)) {
@@ -3399,15 +3399,15 @@ function getNextStepAfterBaseUrl(
 }
 
 function getNextStepAfterRegion(
-  provider: OpenWikiProvider,
+  provider: ArgusWikiProvider,
   modelIdOverride: string | null,
-  onboardingConfig: OpenWikiOnboardingConfig,
-  mode: OpenWikiRunMode,
+  onboardingConfig: ArgusWikiOnboardingConfig,
+  mode: ArgusWikiRunMode,
   forceModelStep = false,
 ): PromptStep | null {
   if (
     modelIdOverride === null &&
-    (forceModelStep || process.env[OPENWIKI_MODEL_ID_ENV_KEY] === undefined)
+    (forceModelStep || process.env[ARGUSWIKI_MODEL_ID_ENV_KEY] === undefined)
   ) {
     return "model";
   }
@@ -3440,9 +3440,9 @@ function getNextStepAfterRegion(
 }
 
 function ensureRunModeConfig(
-  config: OpenWikiOnboardingConfig,
-  mode: OpenWikiRunMode,
-): OpenWikiOnboardingConfig {
+  config: ArgusWikiOnboardingConfig,
+  mode: ArgusWikiRunMode,
+): ArgusWikiOnboardingConfig {
   if (getConfigModeId(config) === mode) {
     return config;
   }
@@ -3464,10 +3464,10 @@ function ensureRunModeConfig(
 }
 
 async function hydrateRunModeConfig(
-  config: OpenWikiOnboardingConfig,
-  mode: OpenWikiRunMode,
+  config: ArgusWikiOnboardingConfig,
+  mode: ArgusWikiRunMode,
   repoRoot: string,
-): Promise<OpenWikiOnboardingConfig> {
+): Promise<ArgusWikiOnboardingConfig> {
   if (mode !== "code") {
     return config;
   }
@@ -3477,12 +3477,12 @@ async function hydrateRunModeConfig(
   return wikiGoal ? { ...config, wikiGoal } : config;
 }
 
-function getRunModeSelectionIndex(mode: OpenWikiRunMode): number {
+function getRunModeSelectionIndex(mode: ArgusWikiRunMode): number {
   const index = RUN_MODE_OPTIONS.findIndex((option) => option.id === mode);
   return index === -1 ? 0 : index;
 }
 
-function getRunModeName(mode: OpenWikiRunMode): string {
+function getRunModeName(mode: ArgusWikiRunMode): string {
   return RUN_MODE_OPTIONS.find((option) => option.id === mode)?.name ?? mode;
 }
 
@@ -3492,17 +3492,17 @@ function getSourceOption(sourceId: ConnectorId): SourceSetupOption {
   );
 }
 
-function getConfigModeId(config: OpenWikiOnboardingConfig): string | undefined {
+function getConfigModeId(config: ArgusWikiOnboardingConfig): string | undefined {
   return config.modeId ?? config.templateId;
 }
 
 function getConfigModeName(
-  config: OpenWikiOnboardingConfig,
+  config: ArgusWikiOnboardingConfig,
 ): string | undefined {
   return config.modeName ?? config.templateName;
 }
 
-function isCodeMode(config: OpenWikiOnboardingConfig): boolean {
+function isCodeMode(config: ArgusWikiOnboardingConfig): boolean {
   return getConfigModeId(config) === "code";
 }
 
@@ -3511,9 +3511,9 @@ function needsEnvValue(secretInput: SourceSecretInput): boolean {
 }
 
 function addSourceInstanceConfig(
-  config: OpenWikiOnboardingConfig,
-  sourceInstance: OpenWikiOnboardingConfig["sourceInstances"][number],
-): OpenWikiOnboardingConfig {
+  config: ArgusWikiOnboardingConfig,
+  sourceInstance: ArgusWikiOnboardingConfig["sourceInstances"][number],
+): ArgusWikiOnboardingConfig {
   const sourceInstances = [...config.sourceInstances, sourceInstance];
   return {
     ...config,
@@ -3523,9 +3523,9 @@ function addSourceInstanceConfig(
 }
 
 function deriveLegacySources(
-  sourceInstances: OpenWikiOnboardingConfig["sourceInstances"],
-): OpenWikiOnboardingConfig["sources"] {
-  const sources: OpenWikiOnboardingConfig["sources"] = {};
+  sourceInstances: ArgusWikiOnboardingConfig["sourceInstances"],
+): ArgusWikiOnboardingConfig["sources"] {
+  const sources: ArgusWikiOnboardingConfig["sources"] = {};
 
   for (const sourceInstance of sourceInstances) {
     if (!sources[sourceInstance.connectorId]) {
@@ -3541,23 +3541,23 @@ function deriveLegacySources(
 }
 
 function getSourceInstanceCount(
-  config: OpenWikiOnboardingConfig,
+  config: ArgusWikiOnboardingConfig,
   sourceId: ConnectorId,
 ): number {
   return getSourceInstances(config, sourceId).length;
 }
 
 function getSourceInstances(
-  config: OpenWikiOnboardingConfig,
+  config: ArgusWikiOnboardingConfig,
   sourceId: ConnectorId,
-): OpenWikiOnboardingConfig["sourceInstances"] {
+): ArgusWikiOnboardingConfig["sourceInstances"] {
   return config.sourceInstances.filter(
     (sourceInstance) => sourceInstance.connectorId === sourceId,
   );
 }
 
 function getConnectedSourceCount(
-  config: OpenWikiOnboardingConfig,
+  config: ArgusWikiOnboardingConfig,
   sourceOptions: readonly SourceSetupOption[],
 ): number {
   const sourceIds = new Set(sourceOptions.map((source) => source.id));
@@ -3568,7 +3568,7 @@ function getConnectedSourceCount(
 
 function createSourceInstanceId(
   sourceId: ConnectorId,
-  config: OpenWikiOnboardingConfig,
+  config: ArgusWikiOnboardingConfig,
 ): string {
   const sourceCount = getSourceInstanceCount(config, sourceId) + 1;
   return `${sourceId}-${sourceCount}`;
@@ -3577,7 +3577,7 @@ function createSourceInstanceId(
 function createSourceInstanceName(
   source: SourceSetupOption,
   description: string,
-  config: OpenWikiOnboardingConfig,
+  config: ArgusWikiOnboardingConfig,
 ): string {
   const sourceCount = getSourceInstanceCount(config, source.id) + 1;
   const trimmedDescription = description.trim();
@@ -3593,7 +3593,7 @@ function isScheduleStep(step: PromptStep | null): boolean {
   return Boolean(step?.startsWith("global-"));
 }
 
-function getProviderSetupDetail(provider: OpenWikiProvider): string {
+function getProviderSetupDetail(provider: ArgusWikiProvider): string {
   if (hasValidConfiguredProvider()) {
     return getProviderLabel(provider);
   }
@@ -3604,31 +3604,31 @@ function getProviderSetupDetail(provider: OpenWikiProvider): string {
 /**
  * Label for the provider's primary credential input.
  */
-function getApiKeyFieldLabel(provider: OpenWikiProvider): string {
+function getApiKeyFieldLabel(provider: ArgusWikiProvider): string {
   return `${getProviderLabel(provider)} API key`;
 }
 
 function hasValidConfiguredProvider(): boolean {
-  return normalizeProvider(process.env[OPENWIKI_PROVIDER_ENV_KEY]) !== null;
+  return normalizeProvider(process.env[ARGUSWIKI_PROVIDER_ENV_KEY]) !== null;
 }
 
 function getModelSetupDetail(
   modelIdOverride: string | null,
-  provider: OpenWikiProvider,
+  provider: ArgusWikiProvider,
 ): string {
   if (modelIdOverride) {
     return `using ${modelIdOverride} for this run`;
   }
 
-  if (process.env[OPENWIKI_MODEL_ID_ENV_KEY]) {
-    return process.env[OPENWIKI_MODEL_ID_ENV_KEY] ?? "";
+  if (process.env[ARGUSWIKI_MODEL_ID_ENV_KEY]) {
+    return process.env[ARGUSWIKI_MODEL_ID_ENV_KEY] ?? "";
   }
 
   return `default ${getDefaultModelId(provider)}`;
 }
 
 function getModelSelectionOptions(
-  provider: OpenWikiProvider,
+  provider: ArgusWikiProvider,
 ): ModelSelectionOption[] {
   return [
     ...getProviderModelOptions(provider).map((model) => ({
@@ -3640,12 +3640,12 @@ function getModelSelectionOptions(
   ];
 }
 
-function shouldStartWithCustomModelInput(provider: OpenWikiProvider): boolean {
+function shouldStartWithCustomModelInput(provider: ArgusWikiProvider): boolean {
   return getProviderModelOptions(provider).length === 0;
 }
 
 function getSelectedModelId(
-  provider: OpenWikiProvider,
+  provider: ArgusWikiProvider,
   selectedIndex: number,
   input: string,
   isCustomInput: boolean,
@@ -3665,8 +3665,8 @@ function getSelectedModelId(
   return isValidModelId(normalizedModelId) ? normalizedModelId : null;
 }
 
-function getProviderSelectionIndex(provider: OpenWikiProvider): number {
-  const selectedIndex = SELECTABLE_OPENWIKI_PROVIDERS.findIndex(
+function getProviderSelectionIndex(provider: ArgusWikiProvider): number {
+  const selectedIndex = SELECTABLE_ARGUSWIKI_PROVIDERS.findIndex(
     (providerOption) => providerOption === provider,
   );
 
@@ -3674,7 +3674,7 @@ function getProviderSelectionIndex(provider: OpenWikiProvider): number {
 }
 
 function getModelSelectionIndex(
-  provider: OpenWikiProvider,
+  provider: ArgusWikiProvider,
   selectedModelId: string,
 ): number {
   const selectedIndex = getModelSelectionOptions(provider).findIndex(
@@ -3710,7 +3710,7 @@ function getInputDisplayWidth(stdoutColumns: number | undefined): number {
 // the pluggable provider abstraction, even though the sole remaining
 // provider (claude-cli, "a Claude Code CLI ...") always takes the article "a".
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-function getProviderArticle(provider: OpenWikiProvider): "a" | "an" {
+function getProviderArticle(provider: ArgusWikiProvider): "a" | "an" {
   return "a";
 }
 
@@ -3746,29 +3746,29 @@ function getTemplateSourceOptions(
 
 function getSourceDescriptionPrompt(source: SourceSetupOption): string {
   if (source.id === "web-search") {
-    return "Describe the topics, companies, or pages OpenWiki should search for.";
+    return "Describe the topics, companies, or pages ArgusWiki should search for.";
   }
 
   if (source.id === "hackernews") {
-    return "Describe the topics, keywords, users, or story types OpenWiki should watch on Hacker News.";
+    return "Describe the topics, keywords, users, or story types ArgusWiki should watch on Hacker News.";
   }
 
   if (source.id === "git-repo") {
-    return "Describe what OpenWiki should understand about this repository.";
+    return "Describe what ArgusWiki should understand about this repository.";
   }
 
-  return `Describe what OpenWiki should look for in ${source.displayName}.`;
+  return `Describe what ArgusWiki should look for in ${source.displayName}.`;
 }
 
 function getFinalOptionLabel(
   option: (typeof FINAL_OPTIONS)[number],
-  mode: OpenWikiRunMode,
+  mode: ArgusWikiRunMode,
 ): string {
   if (mode !== "code") {
     return option;
   }
 
-  return option === "Run ingestion now" ? "Run OpenWiki now" : "Open chat";
+  return option === "Run ingestion now" ? "Run ArgusWiki now" : "Open chat";
 }
 
 function getSourceDescriptionOptionCount(source: SourceSetupOption): number {

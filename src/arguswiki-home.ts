@@ -2,14 +2,14 @@ import { chmod, mkdir } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-export const openWikiHomeDir =
-  process.env.OPENWIKI_HOME ?? path.join(os.homedir(), ".openwiki");
-export const openWikiConnectorsDir = path.join(openWikiHomeDir, "connectors");
-export const openWikiLocalWikiDir = path.join(openWikiHomeDir, "wiki");
-export const openWikiSkillsDir = path.join(openWikiHomeDir, "skills");
+export const argusWikiHomeDir =
+  process.env.ARGUSWIKI_HOME ?? path.join(os.homedir(), ".arguswiki");
+export const argusWikiConnectorsDir = path.join(argusWikiHomeDir, "connectors");
+export const argusWikiLocalWikiDir = path.join(argusWikiHomeDir, "wiki");
+export const argusWikiSkillsDir = path.join(argusWikiHomeDir, "skills");
 
 export function getConnectorDir(connectorId: string): string {
-  return path.join(openWikiConnectorsDir, connectorId);
+  return path.join(argusWikiConnectorsDir, connectorId);
 }
 
 export function getConnectorConfigPath(connectorId: string): string {
@@ -28,17 +28,17 @@ export function getConnectorLogsDir(connectorId: string): string {
   return path.join(getConnectorDir(connectorId), "logs");
 }
 
-export async function ensureOpenWikiHome(): Promise<void> {
-  await mkdir(openWikiHomeDir, { recursive: true, mode: 0o700 });
-  await chmodIfExists(openWikiHomeDir, 0o700);
-  await mkdir(openWikiConnectorsDir, { recursive: true, mode: 0o700 });
-  await mkdir(openWikiLocalWikiDir, { recursive: true, mode: 0o700 });
-  await mkdir(openWikiSkillsDir, { recursive: true, mode: 0o700 });
+export async function ensureArgusWikiHome(): Promise<void> {
+  await mkdir(argusWikiHomeDir, { recursive: true, mode: 0o700 });
+  await chmodIfExists(argusWikiHomeDir, 0o700);
+  await mkdir(argusWikiConnectorsDir, { recursive: true, mode: 0o700 });
+  await mkdir(argusWikiLocalWikiDir, { recursive: true, mode: 0o700 });
+  await mkdir(argusWikiSkillsDir, { recursive: true, mode: 0o700 });
 }
 
 export async function ensureConnectorHome(connectorId: string): Promise<void> {
   assertSafeConnectorId(connectorId);
-  await ensureOpenWikiHome();
+  await ensureArgusWikiHome();
   await mkdir(getConnectorDir(connectorId), { recursive: true, mode: 0o700 });
   await mkdir(getConnectorRawDir(connectorId), {
     recursive: true,

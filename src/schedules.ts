@@ -5,9 +5,9 @@ import path from "node:path";
 import { promisify } from "node:util";
 import { CronExpressionParser } from "cron-parser";
 import cronstrue from "cronstrue";
-import { ensureOpenWikiHome, openWikiHomeDir } from "./openwiki-home.js";
+import { ensureArgusWikiHome, argusWikiHomeDir } from "./arguswiki-home.js";
 import type { ConnectorId } from "./connectors/types.js";
-import type { OpenWikiOnboardingConfig } from "./onboarding.js";
+import type { ArgusWikiOnboardingConfig } from "./onboarding.js";
 
 const execFileAsync = promisify(execFile);
 const DEFAULT_FIRST_HOUR = 2;
@@ -58,7 +58,7 @@ export type PowerScheduleStatus = PowerScheduleInstallResult & {
 };
 
 export type ScheduleMutationResult = {
-  config: OpenWikiOnboardingConfig;
+  config: ArgusWikiOnboardingConfig;
   connectorIds: string[];
   powerSchedule?: PowerScheduleInstallResult;
   skippedConnectorIds: string[];
@@ -117,7 +117,7 @@ export function describeCronExpression(expression: string): string {
 }
 
 export function getSuggestedCronExpression(
-  config: OpenWikiOnboardingConfig,
+  config: ArgusWikiOnboardingConfig,
 ): string {
   return (
     config.ingestionSchedule?.expression ?? `0 ${DEFAULT_FIRST_HOUR} * * *`
@@ -161,10 +161,10 @@ export async function installConnectorSchedule({
   void connectorId;
   const label = getLaunchAgentLabel();
   const launchAgentsDir = getLaunchAgentsDir();
-  const logsDir = path.join(openWikiHomeDir, "logs");
+  const logsDir = path.join(argusWikiHomeDir, "logs");
   const plistPath = getLaunchAgentPath();
 
-  await ensureOpenWikiHome();
+  await ensureArgusWikiHome();
   await mkdir(launchAgentsDir, { recursive: true, mode: 0o700 });
   await mkdir(logsDir, { recursive: true, mode: 0o700 });
   await writeFile(
@@ -194,7 +194,7 @@ export async function installConnectorSchedule({
 }
 
 export async function listConnectorSchedules(
-  config: OpenWikiOnboardingConfig,
+  config: ArgusWikiOnboardingConfig,
 ): Promise<ConnectorScheduleStatus[]> {
   const schedule = config.ingestionSchedule;
   if (!schedule) {
@@ -223,7 +223,7 @@ export async function listConnectorSchedules(
 }
 
 export async function pauseConnectorSchedules(
-  config: OpenWikiOnboardingConfig,
+  config: ArgusWikiOnboardingConfig,
   target: ScheduleTarget,
 ): Promise<ScheduleMutationResult> {
   if (
@@ -250,7 +250,7 @@ export async function pauseConnectorSchedules(
   };
   await unloadLaunchAgent();
 
-  const reconciled = await reconcileOpenWikiPowerSchedule(nextConfig);
+  const reconciled = await reconcileArgusWikiPowerSchedule(nextConfig);
   return {
     config: reconciled.config,
     connectorIds: ["all"],
@@ -267,7 +267,7 @@ export async function resumeConnectorSchedules({
   cwd,
   target,
 }: {
-  config: OpenWikiOnboardingConfig;
+  config: ArgusWikiOnboardingConfig;
   cwd: string;
   target: ScheduleTarget;
 }): Promise<ScheduleMutationResult> {
@@ -300,7 +300,7 @@ export async function resumeConnectorSchedules({
     },
   };
 
-  const reconciled = await reconcileOpenWikiPowerSchedule(nextConfig);
+  const reconciled = await reconcileArgusWikiPowerSchedule(nextConfig);
   return {
     config: reconciled.config,
     connectorIds: ["all"],
@@ -316,7 +316,7 @@ export async function resumeConnectorSchedules({
 }
 
 export async function deleteConnectorSchedules(
-  config: OpenWikiOnboardingConfig,
+  config: ArgusWikiOnboardingConfig,
   target: ScheduleTarget,
 ): Promise<ScheduleMutationResult> {
   if (target !== "all" || !config.ingestionSchedule) {
@@ -333,7 +333,7 @@ export async function deleteConnectorSchedules(
   await unloadLaunchAgent();
   await removeLaunchAgentPlist();
 
-  const reconciled = await reconcileOpenWikiPowerSchedule(nextConfig);
+  const reconciled = await reconcileArgusWikiPowerSchedule(nextConfig);
   return {
     config: reconciled.config,
     connectorIds: ["all"],
@@ -345,8 +345,8 @@ export async function deleteConnectorSchedules(
   };
 }
 
-export async function installOpenWikiPowerSchedule(
-  config: OpenWikiOnboardingConfig,
+export async function installArgusWikiPowerSchedule(
+  config: ArgusWikiOnboardingConfig,
 ): Promise<PowerScheduleInstallResult> {
   const powerWindow = getPowerWindowForConfiguredSchedules(config);
 
@@ -391,7 +391,7 @@ export async function installOpenWikiPowerSchedule(
       ...powerWindow,
       enabled: true,
       warning:
-        "macOS supports one repeat power schedule. OpenWiki updated it to cover the currently saved connector schedules.",
+        "macOS supports one repeat power schedule. ArgusWiki updated it to cover the currently saved connector schedules.",
     };
   } catch (error) {
     return {
@@ -403,7 +403,7 @@ export async function installOpenWikiPowerSchedule(
 }
 
 export function getSavedPowerScheduleStatus(
-  config: OpenWikiOnboardingConfig,
+  config: ArgusWikiOnboardingConfig,
 ): PowerScheduleStatus | null {
   const savedPmset = config.powerManagement?.pmset;
 
@@ -421,10 +421,10 @@ export function getSavedPowerScheduleStatus(
   };
 }
 
-async function reconcileOpenWikiPowerSchedule(
-  config: OpenWikiOnboardingConfig,
+async function reconcileArgusWikiPowerSchedule(
+  config: ArgusWikiOnboardingConfig,
 ): Promise<{
-  config: OpenWikiOnboardingConfig;
+  config: ArgusWikiOnboardingConfig;
   powerSchedule?: PowerScheduleInstallResult;
 }> {
   const savedPmset = config.powerManagement?.pmset;
@@ -437,7 +437,7 @@ async function reconcileOpenWikiPowerSchedule(
       return { config };
     }
 
-    const result = await cancelOpenWikiPowerSchedule();
+    const result = await cancelArgusWikiPowerSchedule();
     return {
       config: {
         ...config,
@@ -457,7 +457,7 @@ async function reconcileOpenWikiPowerSchedule(
     };
   }
 
-  const result = await installOpenWikiPowerSchedule(config);
+  const result = await installArgusWikiPowerSchedule(config);
   return {
     config: {
       ...config,
@@ -477,7 +477,7 @@ async function reconcileOpenWikiPowerSchedule(
   };
 }
 
-async function cancelOpenWikiPowerSchedule(): Promise<PowerScheduleInstallResult> {
+async function cancelArgusWikiPowerSchedule(): Promise<PowerScheduleInstallResult> {
   const disabledSchedule = {
     days: "",
     enabled: false,
@@ -502,7 +502,7 @@ async function cancelOpenWikiPowerSchedule(): Promise<PowerScheduleInstallResult
 
     return {
       ...disabledSchedule,
-      warning: "OpenWiki removed the macOS repeat wake/sleep schedule.",
+      warning: "ArgusWiki removed the macOS repeat wake/sleep schedule.",
     };
   } catch (error) {
     return {
@@ -512,15 +512,15 @@ async function cancelOpenWikiPowerSchedule(): Promise<PowerScheduleInstallResult
   }
 }
 
-function hasActiveIngestionSchedule(config: OpenWikiOnboardingConfig): boolean {
+function hasActiveIngestionSchedule(config: ArgusWikiOnboardingConfig): boolean {
   return Boolean(
     config.ingestionSchedule && !config.ingestionSchedule.pausedAt,
   );
 }
 
 function cloneOnboardingConfig(
-  config: OpenWikiOnboardingConfig,
-): OpenWikiOnboardingConfig {
+  config: ArgusWikiOnboardingConfig,
+): ArgusWikiOnboardingConfig {
   const sourceInstances = config.sourceInstances.map((sourceConfig) => ({
     ...sourceConfig,
     connectorConfig: sourceConfig.connectorConfig
@@ -547,9 +547,9 @@ function cloneOnboardingConfig(
 }
 
 function deriveLegacySources(
-  sourceInstances: OpenWikiOnboardingConfig["sourceInstances"],
-): OpenWikiOnboardingConfig["sources"] {
-  const sources: OpenWikiOnboardingConfig["sources"] = {};
+  sourceInstances: ArgusWikiOnboardingConfig["sourceInstances"],
+): ArgusWikiOnboardingConfig["sources"] {
+  const sources: ArgusWikiOnboardingConfig["sources"] = {};
 
   for (const sourceConfig of sourceInstances) {
     if (!sources[sourceConfig.connectorId]) {
@@ -641,7 +641,7 @@ function parseSimpleCronFields(expression: string): {
 }
 
 function getPowerWindowForConfiguredSchedules(
-  config: OpenWikiOnboardingConfig,
+  config: ArgusWikiOnboardingConfig,
 ): Omit<PowerScheduleInstallResult, "enabled" | "warning"> | null {
   const parsedSchedules: RepeatScheduleTime[] = [];
   const schedule = config.ingestionSchedule;
@@ -839,7 +839,7 @@ function getLaunchdDomain(): string {
 }
 
 function getLaunchAgentLabel(): string {
-  return "com.openwiki.ingestion";
+  return "com.arguswiki.ingestion";
 }
 
 function getLaunchAgentsDir(): string {

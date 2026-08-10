@@ -1,13 +1,13 @@
-export type OpenWikiCommand = "chat" | "init" | "update";
-export type OpenWikiOutputMode = "local-wiki" | "repository";
+export type ArgusWikiCommand = "chat" | "init" | "update";
+export type ArgusWikiOutputMode = "local-wiki" | "repository";
 
-export type OpenWikiRunResult = {
-  command: OpenWikiCommand;
+export type ArgusWikiRunResult = {
+  command: ArgusWikiCommand;
   model: string;
   skipped?: boolean;
 };
 
-export type OpenWikiRunEvent =
+export type ArgusWikiRunEvent =
   | {
       source?: "main" | "subgraph";
       type: "text";
@@ -31,19 +31,19 @@ export type OpenWikiRunEvent =
       message: string;
     };
 
-export type OpenWikiRunOptions = {
+export type ArgusWikiRunOptions = {
   debug?: boolean;
   isFollowup?: boolean;
   modelId?: string | null;
-  onEvent?: (event: OpenWikiRunEvent) => void;
-  outputMode?: OpenWikiOutputMode;
+  onEvent?: (event: ArgusWikiRunEvent) => void;
+  outputMode?: ArgusWikiOutputMode;
   threadId?: string;
   userMessage?: string | null;
 };
 
 export type UpdateMetadata = {
   updatedAt: string;
-  command: OpenWikiCommand;
+  command: ArgusWikiCommand;
   gitHead?: string;
   model: string;
 };

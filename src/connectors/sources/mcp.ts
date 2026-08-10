@@ -49,10 +49,10 @@ async function ingestMcpConnector(
   if (!config.enabled) {
     return {
       connectorId,
-      message: `${definition.displayName} is not enabled. Configure ~/.openwiki/connectors/${connectorId}/config.json with an MCP transport.`,
+      message: `${definition.displayName} is not enabled. Configure ~/.arguswiki/connectors/${connectorId}/config.json with an MCP transport.`,
       rawFiles: [],
       runId,
-      statePath: `~/.openwiki/connectors/${connectorId}/state.json`,
+      statePath: `~/.arguswiki/connectors/${connectorId}/state.json`,
       status: "skipped",
       warnings,
     };
@@ -82,7 +82,7 @@ async function ingestMcpConnector(
 
     return await finishMcpRun({
       connectorId,
-      message: `Discovered ${discovery.tools.length} MCP tool(s). Use openwiki_call_mcp_tool for interactive ingestion or save readOnlyOperations as an optional automation recipe.`,
+      message: `Discovered ${discovery.tools.length} MCP tool(s). Use arguswiki_call_mcp_tool for interactive ingestion or save readOnlyOperations as an optional automation recipe.`,
       rawFiles: [rawFile],
       runId,
       state,
@@ -151,7 +151,7 @@ async function finishMcpRun({
     message,
     rawFiles,
     runId,
-    statePath: `~/.openwiki/connectors/${connectorId}/state.json`,
+    statePath: `~/.arguswiki/connectors/${connectorId}/state.json`,
     status,
     warnings,
   };

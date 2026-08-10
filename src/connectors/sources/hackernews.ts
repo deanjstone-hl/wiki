@@ -102,10 +102,10 @@ async function ingest(
     return {
       connectorId: "hackernews",
       message:
-        "Hacker News connector is not enabled. Set enabled=true in ~/.openwiki/connectors/hackernews/config.json.",
+        "Hacker News connector is not enabled. Set enabled=true in ~/.arguswiki/connectors/hackernews/config.json.",
       rawFiles,
       runId,
-      statePath: "~/.openwiki/connectors/hackernews/state.json",
+      statePath: "~/.arguswiki/connectors/hackernews/state.json",
       status: "skipped",
       warnings,
     };
@@ -196,7 +196,7 @@ async function ingest(
     }.`,
     rawFiles,
     runId,
-    statePath: "~/.openwiki/connectors/hackernews/state.json",
+    statePath: "~/.arguswiki/connectors/hackernews/state.json",
     status: rawFiles.length > 0 ? "success" : "skipped",
     warnings,
   };

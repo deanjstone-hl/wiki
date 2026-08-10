@@ -1,16 +1,16 @@
 import { cp, readdir, rm } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
-import { ensureOpenWikiHome, openWikiSkillsDir } from "../openwiki-home.js";
+import { ensureArgusWikiHome, argusWikiSkillsDir } from "../arguswiki-home.js";
 
 const bundledSkillsDir = fileURLToPath(
   new URL("../../skills", import.meta.url),
 );
 
-/** Copies bundled skills into the OpenWiki home while preserving other skills. */
+/** Copies bundled skills into the ArgusWiki home while preserving other skills. */
 export async function syncBundledSkills(): Promise<void> {
-  await ensureOpenWikiHome();
-  await replaceSkillDirectories(bundledSkillsDir, openWikiSkillsDir);
+  await ensureArgusWikiHome();
+  await replaceSkillDirectories(bundledSkillsDir, argusWikiSkillsDir);
 }
 
 /** Replaces bundled skill directories without removing unrelated skills. */

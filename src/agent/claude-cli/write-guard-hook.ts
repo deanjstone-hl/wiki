@@ -39,7 +39,7 @@ async function main(): Promise<void> {
       "claude-cli write guard misconfigured: CLAUDE_CLI_REPO_ROOT is not set.",
     );
   }
-  const allowedRelativeDir = process.env.CLAUDE_CLI_ALLOWED_DIR ?? "openwiki";
+  const allowedRelativeDir = process.env.CLAUDE_CLI_ALLOWED_DIR ?? "arguswiki";
 
   const raw = await readStdin();
   let input: PreToolUseHookInput;

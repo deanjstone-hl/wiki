@@ -16,7 +16,7 @@ export interface WriteGuardDecision {
 export interface EvaluateWritePathOptions {
   /** Absolute path to the repository root the claude-cli agent was launched against. */
   repoRoot: string;
-  /** Path, relative to repoRoot, that writes/edits must stay within (e.g. "openwiki"). */
+  /** Path, relative to repoRoot, that writes/edits must stay within (e.g. "arguswiki"). */
   allowedRelativeDir: string;
   /** The file_path the tool call wants to write/edit, as reported by Claude Code. */
   filePath: string;

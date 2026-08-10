@@ -2,15 +2,15 @@ import { existsSync, readFileSync } from "node:fs";
 import { chmod, mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { OPEN_WIKI_DIR } from "./constants.js";
-import { ensureOpenWikiHome, openWikiHomeDir } from "./openwiki-home.js";
+import { ensureArgusWikiHome, argusWikiHomeDir } from "./arguswiki-home.js";
 import type { ConnectorId } from "./connectors/types.js";
 
-export const openWikiOnboardingPath = path.join(
-  openWikiHomeDir,
+export const argusWikiOnboardingPath = path.join(
+  argusWikiHomeDir,
   "onboarding.json",
 );
-export const openWikiInstructionsPath = path.join(
-  openWikiHomeDir,
+export const argusWikiInstructionsPath = path.join(
+  argusWikiHomeDir,
   "INSTRUCTIONS.md",
 );
 export const REPOSITORY_INSTRUCTIONS_FILE = "INSTRUCTIONS.md";
@@ -37,7 +37,7 @@ export type OnboardingSourceInstanceConfig = OnboardingSourceConfig & {
   name?: string;
 };
 
-export type OpenWikiPowerManagementConfig = {
+export type ArgusWikiPowerManagementConfig = {
   pmset?: {
     days: string;
     enabled: boolean;
@@ -48,12 +48,12 @@ export type OpenWikiPowerManagementConfig = {
   };
 };
 
-export type OpenWikiOnboardingConfig = {
+export type ArgusWikiOnboardingConfig = {
   completedAt?: string;
   ingestionSchedule?: OnboardingSourceScheduleConfig;
   modeId?: string;
   modeName?: string;
-  powerManagement?: OpenWikiPowerManagementConfig;
+  powerManagement?: ArgusWikiPowerManagementConfig;
   sourceInstances: OnboardingSourceInstanceConfig[];
   sources: Partial<Record<ConnectorId, OnboardingSourceConfig>>;
   templateId?: string;
@@ -62,7 +62,7 @@ export type OpenWikiOnboardingConfig = {
   wikiGoal?: string;
 };
 
-export function createEmptyOnboardingConfig(): OpenWikiOnboardingConfig {
+export function createEmptyOnboardingConfig(): ArgusWikiOnboardingConfig {
   return {
     sourceInstances: [],
     sources: {},
@@ -70,12 +70,12 @@ export function createEmptyOnboardingConfig(): OpenWikiOnboardingConfig {
   };
 }
 
-export async function readOpenWikiOnboardingConfig(): Promise<OpenWikiOnboardingConfig> {
-  await ensureOpenWikiHome();
+export async function readArgusWikiOnboardingConfig(): Promise<ArgusWikiOnboardingConfig> {
+  await ensureArgusWikiHome();
 
   try {
     const config = normalizeOnboardingConfig(
-      JSON.parse(await readFile(openWikiOnboardingPath, "utf8")),
+      JSON.parse(await readFile(argusWikiOnboardingPath, "utf8")),
     );
 
     return {
@@ -94,29 +94,29 @@ export async function readOpenWikiOnboardingConfig(): Promise<OpenWikiOnboarding
   }
 }
 
-export async function saveOpenWikiOnboardingConfig(
-  config: OpenWikiOnboardingConfig,
+export async function saveArgusWikiOnboardingConfig(
+  config: ArgusWikiOnboardingConfig,
 ): Promise<void> {
-  await ensureOpenWikiHome();
+  await ensureArgusWikiHome();
   const normalizedConfig = normalizeOnboardingConfig(config);
   const { wikiGoal, ...jsonConfig } = normalizedConfig;
 
   await writeFile(
-    openWikiOnboardingPath,
+    argusWikiOnboardingPath,
     `${JSON.stringify(jsonConfig, null, 2)}\n`,
     {
       encoding: "utf8",
       mode: 0o600,
     },
   );
-  await chmod(openWikiOnboardingPath, 0o600);
+  await chmod(argusWikiOnboardingPath, 0o600);
 
   if (wikiGoal?.trim()) {
-    await writeFile(openWikiInstructionsPath, `${wikiGoal.trim()}\n`, {
+    await writeFile(argusWikiInstructionsPath, `${wikiGoal.trim()}\n`, {
       encoding: "utf8",
       mode: 0o600,
     });
-    await chmod(openWikiInstructionsPath, 0o600);
+    await chmod(argusWikiInstructionsPath, 0o600);
   }
 }
 
@@ -167,7 +167,7 @@ export async function saveRepositoryWikiInstructions(
 }
 
 export function isOnboardingComplete(
-  config: OpenWikiOnboardingConfig,
+  config: ArgusWikiOnboardingConfig,
 ): boolean {
   return Boolean(
     config.completedAt &&
@@ -176,14 +176,14 @@ export function isOnboardingComplete(
   );
 }
 
-export function isOpenWikiOnboardingCompleteSync(): boolean {
-  if (!existsSync(openWikiOnboardingPath)) {
+export function isArgusWikiOnboardingCompleteSync(): boolean {
+  if (!existsSync(argusWikiOnboardingPath)) {
     return false;
   }
 
   try {
     const config = normalizeOnboardingConfig(
-      JSON.parse(readFileSync(openWikiOnboardingPath, "utf8")),
+      JSON.parse(readFileSync(argusWikiOnboardingPath, "utf8")),
     );
     const wikiGoal = readWikiInstructionsSync();
 
@@ -196,13 +196,13 @@ export function isOpenWikiOnboardingCompleteSync(): boolean {
 export function isRepositoryCodeOnboardingCompleteSync(
   repoRoot: string,
 ): boolean {
-  if (!existsSync(openWikiOnboardingPath)) {
+  if (!existsSync(argusWikiOnboardingPath)) {
     return false;
   }
 
   try {
     const config = normalizeOnboardingConfig(
-      JSON.parse(readFileSync(openWikiOnboardingPath, "utf8")),
+      JSON.parse(readFileSync(argusWikiOnboardingPath, "utf8")),
     );
     if (!isCodeModeConfig(config)) {
       return false;
@@ -221,7 +221,7 @@ export function isRepositoryCodeOnboardingCompleteSync(
 
 async function readWikiInstructions(): Promise<string | undefined> {
   try {
-    const content = (await readFile(openWikiInstructionsPath, "utf8")).trim();
+    const content = (await readFile(argusWikiInstructionsPath, "utf8")).trim();
     return content.length > 0 ? content : undefined;
   } catch (error) {
     if (isFileNotFoundError(error)) {
@@ -233,21 +233,21 @@ async function readWikiInstructions(): Promise<string | undefined> {
 }
 
 function readWikiInstructionsSync(): string | undefined {
-  if (!existsSync(openWikiInstructionsPath)) {
+  if (!existsSync(argusWikiInstructionsPath)) {
     return undefined;
   }
 
-  const content = readFileSync(openWikiInstructionsPath, "utf8").trim();
+  const content = readFileSync(argusWikiInstructionsPath, "utf8").trim();
   return content.length > 0 ? content : undefined;
 }
 
-function normalizeOnboardingConfig(value: unknown): OpenWikiOnboardingConfig {
+function normalizeOnboardingConfig(value: unknown): ArgusWikiOnboardingConfig {
   if (!isObject(value)) {
     return createEmptyOnboardingConfig();
   }
 
   const sources = isObject(value.sources) ? value.sources : {};
-  const config: OpenWikiOnboardingConfig = {
+  const config: ArgusWikiOnboardingConfig = {
     sourceInstances: [],
     sources: {},
     version: 1,
@@ -360,7 +360,7 @@ function normalizeOnboardingConfig(value: unknown): OpenWikiOnboardingConfig {
   return config;
 }
 
-function isCodeModeConfig(config: OpenWikiOnboardingConfig): boolean {
+function isCodeModeConfig(config: ArgusWikiOnboardingConfig): boolean {
   return (config.modeId ?? config.templateId) === "code";
 }
 
@@ -402,8 +402,8 @@ function normalizeSourceScheduleConfig(
 
 function deriveLegacySources(
   sourceInstances: OnboardingSourceInstanceConfig[],
-): OpenWikiOnboardingConfig["sources"] {
-  const sources: OpenWikiOnboardingConfig["sources"] = {};
+): ArgusWikiOnboardingConfig["sources"] {
+  const sources: ArgusWikiOnboardingConfig["sources"] = {};
 
   for (const sourceInstance of sourceInstances) {
     if (!sources[sourceInstance.connectorId]) {
@@ -427,7 +427,7 @@ function createSourceInstanceId(
 
 function normalizePowerManagementConfig(
   value: Record<string, unknown>,
-): OpenWikiPowerManagementConfig | undefined {
+): ArgusWikiPowerManagementConfig | undefined {
   if (!isObject(value.pmset)) {
     return undefined;
   }

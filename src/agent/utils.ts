@@ -9,13 +9,13 @@ import {
   isFileNotFoundError,
 } from "../fs-errors.js";
 import {
-  readOpenWikiOnboardingConfig,
+  readArgusWikiOnboardingConfig,
   readRepositoryWikiInstructions,
 } from "../onboarding.js";
 import type {
-  OpenWikiCommand,
-  OpenWikiOutputMode,
-  OpenWikiRunOptions,
+  ArgusWikiCommand,
+  ArgusWikiOutputMode,
+  ArgusWikiRunOptions,
   RunContext,
   UpdateMetadata,
 } from "./types.js";
@@ -24,7 +24,7 @@ import type { Dirent } from "node:fs";
 const execFileAsync = promisify(execFile);
 const LOCAL_WIKI_METADATA_PATH = ".last-update.json";
 
-export type OpenWikiContentSnapshot = string;
+export type ArgusWikiContentSnapshot = string;
 
 export type UpdateNoopStatus =
   | {
@@ -41,9 +41,9 @@ export type UpdateNoopStatus =
  * Builds the per-run context the prompt uses to reason about prior docs and git changes.
  */
 export async function createRunContext(
-  command: OpenWikiCommand,
+  command: ArgusWikiCommand,
   cwd: string,
-  outputMode: OpenWikiOutputMode = "repository",
+  outputMode: ArgusWikiOutputMode = "repository",
 ): Promise<RunContext> {
   const lastUpdate = await readLastUpdate(cwd, outputMode);
   const wikiGoal = await readRunWikiGoal(cwd, outputMode);
@@ -60,7 +60,7 @@ export async function createRunContext(
     return {
       lastUpdate,
       gitSummary:
-        "Local wiki mode: connector source evidence is provided through raw data paths and OpenWiki connector tools. Git repository diff context is not used for this run.",
+        "Local wiki mode: connector source evidence is provided through raw data paths and ArgusWiki connector tools. Git repository diff context is not used for this run.",
       wikiGoal,
     };
   }
@@ -74,13 +74,13 @@ export async function createRunContext(
 
 async function readRunWikiGoal(
   cwd: string,
-  outputMode: OpenWikiOutputMode,
+  outputMode: ArgusWikiOutputMode,
 ): Promise<string | undefined> {
   if (outputMode === "repository") {
     return readRepositoryWikiInstructions(cwd);
   }
 
-  return (await readOpenWikiOnboardingConfig()).wikiGoal;
+  return (await readArgusWikiOnboardingConfig()).wikiGoal;
 }
 
 export async function getUpdateNoopStatus(
@@ -121,7 +121,7 @@ export async function getUpdateNoopStatus(
 
     if (
       committedPaths.length === 0 ||
-      committedPaths.some((changedPath) => !isOpenWikiPath(changedPath))
+      committedPaths.some((changedPath) => !isArgusWikiPath(changedPath))
     ) {
       return { shouldSkip: false, reason: "git head changed" };
     }
@@ -134,7 +134,7 @@ export async function getUpdateNoopStatus(
   };
 }
 
-export function shouldCheckUpdateNoop(options: OpenWikiRunOptions): boolean {
+export function shouldCheckUpdateNoop(options: ArgusWikiRunOptions): boolean {
   return !options.userMessage?.trim();
 }
 
@@ -142,10 +142,10 @@ export function shouldCheckUpdateNoop(options: OpenWikiRunOptions): boolean {
  * Records a successful init/update run so future updates can diff from this git head.
  */
 export async function writeLastUpdateMetadata(
-  command: OpenWikiCommand,
+  command: ArgusWikiCommand,
   cwd: string,
   modelId: string,
-  outputMode: OpenWikiOutputMode = "repository",
+  outputMode: ArgusWikiOutputMode = "repository",
 ): Promise<void> {
   const metadataFile = getMetadataFilePath(cwd, outputMode);
   const metadata: UpdateMetadata = {
@@ -164,23 +164,23 @@ export async function writeLastUpdateMetadata(
 }
 
 /**
- * Persists run metadata when OpenWiki content changed since the given snapshot.
+ * Persists run metadata when ArgusWiki content changed since the given snapshot.
  * Returns whether metadata was written. Used after both successful and failed
  * runs so already-generated content stays diffable by future updates.
  */
 export async function persistRunMetadataIfChanged(
-  command: OpenWikiCommand,
+  command: ArgusWikiCommand,
   cwd: string,
   modelId: string,
-  outputMode: OpenWikiOutputMode,
-  snapshotBefore: OpenWikiContentSnapshot | null,
+  outputMode: ArgusWikiOutputMode,
+  snapshotBefore: ArgusWikiContentSnapshot | null,
 ): Promise<boolean> {
   if (command === "chat" || snapshotBefore === null) {
     return false;
   }
 
   if (
-    snapshotBefore === (await createOpenWikiContentSnapshot(cwd, outputMode))
+    snapshotBefore === (await createArgusWikiContentSnapshot(cwd, outputMode))
   ) {
     return false;
   }
@@ -191,16 +191,16 @@ export async function persistRunMetadataIfChanged(
 }
 
 /**
- * Hashes OpenWiki content, excluding run metadata, to detect real documentation changes.
+ * Hashes ArgusWiki content, excluding run metadata, to detect real documentation changes.
  */
-export async function createOpenWikiContentSnapshot(
+export async function createArgusWikiContentSnapshot(
   cwd: string,
-  outputMode: OpenWikiOutputMode = "repository",
-): Promise<OpenWikiContentSnapshot> {
-  const openWikiDir = getWikiContentRoot(cwd, outputMode);
+  outputMode: ArgusWikiOutputMode = "repository",
+): Promise<ArgusWikiContentSnapshot> {
+  const argusWikiDir = getWikiContentRoot(cwd, outputMode);
   const hash = createHash("sha256");
 
-  await addDirectoryToSnapshot(hash, openWikiDir, "");
+  await addDirectoryToSnapshot(hash, argusWikiDir, "");
 
   return hash.digest("hex");
 }
@@ -210,7 +210,7 @@ export async function createOpenWikiContentSnapshot(
  */
 async function readLastUpdate(
   cwd: string,
-  outputMode: OpenWikiOutputMode,
+  outputMode: ArgusWikiOutputMode,
 ): Promise<UpdateMetadata | null> {
   const metadataFile = getMetadataFilePath(cwd, outputMode);
 
@@ -245,7 +245,7 @@ async function readLastUpdate(
 }
 
 /**
- * Recursively adds stable file paths and bytes to the OpenWiki content snapshot.
+ * Recursively adds stable file paths and bytes to the ArgusWiki content snapshot.
  */
 async function addDirectoryToSnapshot(
   hash: ReturnType<typeof createHash>,
@@ -302,14 +302,14 @@ async function addDirectoryToSnapshot(
 
 function getWikiContentRoot(
   cwd: string,
-  outputMode: OpenWikiOutputMode,
+  outputMode: ArgusWikiOutputMode,
 ): string {
   return outputMode === "local-wiki" ? cwd : path.join(cwd, OPEN_WIKI_DIR);
 }
 
 function getMetadataFilePath(
   cwd: string,
-  outputMode: OpenWikiOutputMode,
+  outputMode: ArgusWikiOutputMode,
 ): string {
   return outputMode === "local-wiki"
     ? path.join(cwd, LOCAL_WIKI_METADATA_PATH)
@@ -335,7 +335,7 @@ async function readSnapshotFile(filePath: string): Promise<Buffer | null> {
  * Produces the git evidence block passed to init/update prompts.
  */
 async function createGitSummary(
-  command: OpenWikiCommand,
+  command: ArgusWikiCommand,
   cwd: string,
   lastUpdate: UpdateMetadata | null,
 ): Promise<string> {
@@ -384,7 +384,7 @@ async function createGitSummary(
     ]);
 
     if (command === "update") {
-      sections.push("No prior OpenWiki update timestamp was found.");
+      sections.push("No prior ArgusWiki update timestamp was found.");
     }
 
     sections.push(
@@ -462,7 +462,7 @@ async function getChangedPathsSinceLastUpdate(
     .filter(Boolean);
 }
 
-function isOpenWikiPath(changedPath: string): boolean {
+function isArgusWikiPath(changedPath: string): boolean {
   return (
     changedPath === OPEN_WIKI_DIR || changedPath.startsWith(`${OPEN_WIKI_DIR}/`)
   );

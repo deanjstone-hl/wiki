@@ -1,4 +1,4 @@
-import { OPENWIKI_SLACK_USER_TOKEN_ENV_KEY } from "../../constants.js";
+import { ARGUSWIKI_SLACK_USER_TOKEN_ENV_KEY } from "../../constants.js";
 import { getOAuthAccessToken } from "../../auth/tokens.js";
 import {
   createRunId,
@@ -139,7 +139,7 @@ const definition: ConnectorDefinition = {
     "Fetches Slack conversations, recent messages, and assistant search context with a Slack user token.",
   displayName: "Slack",
   id: "slack",
-  requiredEnv: [OPENWIKI_SLACK_USER_TOKEN_ENV_KEY],
+  requiredEnv: [ARGUSWIKI_SLACK_USER_TOKEN_ENV_KEY],
   supportsAgenticDiscovery: false,
 };
 
@@ -175,22 +175,22 @@ async function ingest(
     return {
       connectorId: "slack",
       message:
-        "Slack connector is not enabled. Run openwiki auth configure slack --force to generate the direct Slack API config.",
+        "Slack connector is not enabled. Run arguswiki auth configure slack --force to generate the direct Slack API config.",
       rawFiles,
       runId,
-      statePath: "~/.openwiki/connectors/slack/state.json",
+      statePath: "~/.arguswiki/connectors/slack/state.json",
       status: "skipped",
       warnings,
     };
   }
 
-  if (!process.env[OPENWIKI_SLACK_USER_TOKEN_ENV_KEY]) {
+  if (!process.env[ARGUSWIKI_SLACK_USER_TOKEN_ENV_KEY]) {
     return {
       connectorId: "slack",
-      message: `${OPENWIKI_SLACK_USER_TOKEN_ENV_KEY} is required for Slack ingestion.`,
+      message: `${ARGUSWIKI_SLACK_USER_TOKEN_ENV_KEY} is required for Slack ingestion.`,
       rawFiles,
       runId,
-      statePath: "~/.openwiki/connectors/slack/state.json",
+      statePath: "~/.arguswiki/connectors/slack/state.json",
       status: "error",
       warnings,
     };
@@ -291,7 +291,7 @@ async function ingest(
         note:
           latestSource === "search.messages"
             ? "latestMessage is computed from Slack search.messages sorted by timestamp descending for the authenticated user."
-            : "latestMessage is only the latest authenticated-user message found in bounded conversations.history fallback data. It is not a reliable global answer for the user's true latest Slack message. Add the Slack user-token search:read scope and rerun openwiki auth slack to enable definitive self-message search.",
+            : "latestMessage is only the latest authenticated-user message found in bounded conversations.history fallback data. It is not a reliable global answer for the user's true latest Slack message. Add the Slack user-token search:read scope and rerun arguswiki auth slack to enable definitive self-message search.",
         recentUserMessages: recent?.userMessages ?? [],
         searchUserMessages: myMessagesSearch?.userMessages ?? [],
         source: latestSource,
@@ -348,7 +348,7 @@ async function ingest(
     message: `Fetched ${rawFiles.length} Slack dump(s).`,
     rawFiles,
     runId,
-    statePath: "~/.openwiki/connectors/slack/state.json",
+    statePath: "~/.arguswiki/connectors/slack/state.json",
     status: rawFiles.length > 0 ? "success" : "skipped",
     warnings,
   };
