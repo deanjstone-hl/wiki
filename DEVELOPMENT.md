@@ -67,4 +67,4 @@ Real runs can write:
 
 Scheduled update workflow example:
 
-- `examples/openwiki-update.yml`
+- `examples/arguswiki-update.yml`

@@ -53,7 +53,7 @@ personal brain wiki.
 
 Then to ensure your documentation stays up-to-date, add the CI workflow for your Git provider to automatically open a PR or merge request with documentation updates:
 
-- GitHub Actions: copy [openwiki-update.yml](./examples/openwiki-update.yml) into `.github/workflows/openwiki-update.yml`.
+- GitHub Actions: copy [arguswiki-update.yml](./examples/arguswiki-update.yml) into `.github/workflows/arguswiki-update.yml`.
 
 For repository documentation in GitHub Actions, use
 `openwiki code --update --print`. You do not need to run `--init` in CI:

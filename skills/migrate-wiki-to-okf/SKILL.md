@@ -1,6 +1,6 @@
 ---
 name: migrate-wiki-to-okf
-description: Make an existing OpenWiki fully OKF-compliant. Use when any current wiki Markdown files lack valid OKF YAML front matter or when the user requests an OKF migration.
+description: Make an existing ArgusWiki fully OKF-compliant. Use when any current wiki Markdown files lack valid OKF YAML front matter or when the user requests an OKF migration.
 ---
 
 # Migrate Wiki to OKF
@@ -35,7 +35,7 @@ tags: [<tag>, <tag>]
 ---
 ```
 
-- Do not edit `index.md`; OpenWiki regenerates directory indexes deterministically after the run.
+- Do not edit `index.md`; ArgusWiki regenerates directory indexes deterministically after the run.
 - Report the files checked, the files changed, and any file whose metadata could not be inferred confidently.
 - The description field here is very important as retrieval tools will rely on it when searching through documents. Ensure your descriptions are clear, detailed, and optimized for search.
 
