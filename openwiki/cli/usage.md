@@ -15,7 +15,7 @@ From `src/commands.ts` and `README.md`, the supported entry patterns are:
 
 - `openwiki` — open the interactive chat UI.
 - `openwiki "message"` — send a chat message immediately, then stay open.
-- `openwiki personal --init [message]` — generate initial local personal brain wiki documentation.
+- `openwiki personal --init [message]` — generate initial local personal brain wiki documentation. **Currently errors under this fork** — see the caveat below.
 - `openwiki code --init [message]` — generate initial repository documentation.
 - `openwiki --update [message]` — refresh existing ArgusWiki documentation.
 - `openwiki -p, --print` — run once and print the final assistant output (non-interactive).
@@ -38,13 +38,15 @@ From `src/commands.ts` and `README.md`, the supported entry patterns are:
 
 The parser rejects incompatible combinations such as `--init` and `--update` together, and it requires a message or command when `--print` is used.
 
+**`personal` mode currently errors.** The agent runtime's only backend (`runClaudeCliAgent()`, see [Agent workflow: Claude Code CLI provider](../agent/workflow.md#claude-code-cli-provider)) unconditionally rejects `local-wiki` output mode, which is what `personal` mode and the wiki-synthesis step of `openwiki ingest` both request. `openwiki personal --init/--update` and `openwiki ingest <target>` will fail with "The claude-cli provider only supports repository output mode." Deterministic connector ingestion (raw data fetch/write) is unaffected; only the agent synthesis step that follows it fails. Treat this as a known gap, not documentation error, until source changes.
+
 ### Auto-exit for init/update
 
 When explicit init (`openwiki personal --init` or `openwiki code --init`) or `--update` is run in a TTY (without `--print`), the CLI starts the run, streams agent output, and **exits automatically on success** (`shouldAutoExitStartupRun` in `src/cli.tsx`). Chat runs and `--print` runs are not affected — chat stays open for follow-ups, and `--print` writes to stdout and exits.
 
 ### Non-interactive mode
 
-If stdin is not a TTY (e.g. CI), or `--print` is used, the CLI requires the provider's credentials to be already saved in `~/.arguswiki/.env` or present in the environment — the provider API key, or `GOOGLE_CLOUD_PROJECT` for the vertex provider. It will error with a clear message if the value is missing, rather than prompting interactively.
+If stdin is not a TTY (e.g. CI), or `--print` is used, the CLI still runs `needsCredentialSetup()`'s checks non-interactively instead of prompting. In practice the sole provider (`claude-cli`) is keyless and has no required env key, so this mostly matters for an explicitly invalid `ARGUSWIKI_PROVIDER` value or a missing model ID override — the run errors with a clear message rather than hanging on a prompt. The `claude` CLI itself must still be installed and authenticated in the run environment; ArgusWiki does not verify that up front.
 
 ## Interactive behavior
 
@@ -62,100 +64,25 @@ The UI persists provider and model selection back to `~/.arguswiki/.env` through
 
 ## Credentials and onboarding
 
-The first interactive run can prompt for:
+This fork's only provider, `claude-cli`, is keyless: it spawns the operator's already-authenticated `claude` CLI binary as a subprocess rather than calling a hosted API with an API key or OAuth token. `src/credentials.tsx` still contains the upstream interactive onboarding flow (provider selection, API key/base-URL/model prompts) as UI scaffolding, but the provider-selection step has nothing to select — `SELECTABLE_ARGUSWIKI_PROVIDERS` is empty in `src/constants.ts`. In practice, the only thing onboarding can still meaningfully prompt for is an optional `LANGSMITH_API_KEY` for tracing (which sets `LANGCHAIN_PROJECT=arguswiki` and `LANGCHAIN_TRACING_V2=true` if provided).
 
-- a **provider** (`ARGUSWIKI_PROVIDER`) — openai, openai-chatgpt, openrouter, baseten, fireworks, nvidia, openai-compatible, anthropic, or vertex (the `claude-cli` provider is keyless and deliberately excluded from this interactive list — see [Claude Code CLI provider](#claude-code-cli-provider) below),
-- the **provider API key** (e.g. `OPENROUTER_API_KEY`, `OPENAI_API_KEY`, `OPENAI_COMPATIBLE_API_KEY`, `ANTHROPIC_API_KEY`, `BASETEN_API_KEY`, `FIREWORKS_API_KEY`) — skipped for the vertex provider, which instead prompts for a **GCP project** (`GOOGLE_CLOUD_PROJECT`, required) and a **GCP location** (`GOOGLE_CLOUD_LOCATION`, optional, defaults to `global`),
-- a **base URL** for providers that require one (the openai-compatible provider prompts for `OPENAI_COMPATIBLE_BASE_URL`),
-- a **model ID** stored as `ARGUSWIKI_MODEL_ID` — chosen from the provider's model list or a custom ID,
-- optional `LANGSMITH_API_KEY` for tracing.
-
-If a LangSmith key is provided, onboarding also enables `LANGCHAIN_PROJECT=arguswiki` and `LANGCHAIN_TRACING_V2=true`.
-
-`src/credentials.tsx` determines whether setup is needed and walks the user through the missing values using arrow-key selection menus for provider and model. See [Credentials and updates](../operations/credentials-and-updates.md) for details.
+`needsCredentialSetup()` in `src/credentials.tsx` decides whether the setup flow runs at all; see [Credentials and updates](../operations/credentials-and-updates.md) for the full diagnostic/storage picture, including which legacy provider env keys are still tracked for hygiene even though nothing reads them.
 
 ## Provider and model selection
 
-Providers and their model options are defined in `PROVIDER_CONFIGS` in `src/constants.ts`:
-
-| Provider          | Env key                                             | Base URL                                       | Models                                                                |
-| ----------------- | --------------------------------------------------- | ---------------------------------------------- | --------------------------------------------------------------------- |
-| openai            | `OPENAI_API_KEY`                                    | (default)                                      | 5.6 Terra, 5.6 Luna, 5.6 Sol, 5.5, 5.4 mini                           |
-| openai-chatgpt    | `OPENAI_CHATGPT_ACCESS_TOKEN`                       | (Codex backend)                                | Same as openai (OAuth login, no API key)                              |
-| openrouter        | `OPENROUTER_API_KEY`                                | `https://openrouter.ai/api/v1`                 | GLM 5.2, Fusion, Kimi K2.7 Code, Claude Opus/Sonnet, GPT 5.4 mini/5.5 |
-| baseten           | `BASETEN_API_KEY`                                   | `https://inference.baseten.co/v1`              | GLM 5.2, Kimi K2.7 Code                                               |
-| fireworks         | `FIREWORKS_API_KEY`                                 | `https://api.fireworks.ai/inference/v1`        | GLM 5.2, Kimi K2.7 Code                                               |
-| nvidia            | `NVIDIA_API_KEY`                                    | `https://integrate.api.nvidia.com/v1`          | Nemotron 3 Super/Ultra/Nano, DeepSeek V4 Pro, GPT-OSS 120B, Kimi K2.6 |
-| openai-compatible | `OPENAI_COMPATIBLE_API_KEY`                         | `OPENAI_COMPATIBLE_BASE_URL` (required)        | custom model ID only                                                  |
-| anthropic         | `ANTHROPIC_API_KEY`                                 | (default, or `ANTHROPIC_BASE_URL`)             | Haiku, Sonnet, Opus                                                   |
-| vertex            | none (Google ADC) — `GOOGLE_CLOUD_PROJECT` required | per `GOOGLE_CLOUD_LOCATION` (default `global`) | Haiku, Sonnet, Opus (Claude on Vertex AI)                             |
-
-The default provider is `openai`, and the default model is `gpt-5.6-terra`. `resolveConfiguredProvider()` picks the provider from `ARGUSWIKI_PROVIDER`, then falls back to the first configured provider API key in this order: OpenAI, OpenAI-compatible, OpenRouter, Anthropic, Baseten, Fireworks, NVIDIA, and finally `DEFAULT_PROVIDER`. `claude-cli` is never picked by this fallback order — it only runs when `ARGUSWIKI_PROVIDER=claude-cli` is set explicitly.
+`ArgusWikiProvider` in `src/constants.ts` has exactly one member, `claude-cli`, and `PROVIDER_CONFIGS` has exactly one entry. `README.md` and parts of `src/credentials.tsx` still describe the upstream multi-provider table (OpenAI, OpenRouter, Anthropic, Baseten, Fireworks, NVIDIA, OpenAI-compatible, Vertex AI, ChatGPT OAuth) — that table, and the per-provider base-URL/region/API-key setup it implies, does not reflect current source and should not be relied on. The provider fallback chain (picking a provider by whichever API key is set) is also gone; `resolveConfiguredProvider()` now just normalizes `ARGUSWIKI_PROVIDER` and falls back to `DEFAULT_PROVIDER`, both of which resolve to `claude-cli`.
 
 ### Claude Code CLI provider
 
-Setting `ARGUSWIKI_PROVIDER=claude-cli` runs ArgusWiki against the operator's own already-authenticated `claude` CLI binary as a subprocess instead of calling a hosted API. There is no API key, base URL, or model list to configure — `ARGUSWIKI_MODEL_ID`, if set, is passed through to `claude --model`. It requires the `claude` CLI to be installed and signed in on the machine running ArgusWiki, which makes it a good fit for a self-hosted CI runner under an operator's account rather than the interactive onboarding flow. It only supports `repository` output mode. See [Agent workflow: Claude Code CLI provider](../agent/workflow.md#claude-code-cli-provider) for the execution details, including how the docs-only write restriction is enforced for this path.
+`ARGUSWIKI_PROVIDER=claude-cli` (also the default) runs ArgusWiki against the operator's own already-authenticated `claude` CLI binary as a subprocess instead of calling a hosted API. There is no API key, base URL, or model list to configure — `ARGUSWIKI_MODEL_ID`, if set, is passed through to `claude --model`. It requires the `claude` CLI to be installed and signed in on the machine running ArgusWiki, which makes it a good fit for a self-hosted CI runner under an operator's account rather than the interactive onboarding flow. **It only supports `repository` output mode** — `openwiki personal --init/--update` and the synthesis step of `openwiki ingest` request `local-wiki` mode and currently error because of this (see the caveat above and [Agent workflow: Claude Code CLI provider](../agent/workflow.md#claude-code-cli-provider) for the execution details, including how the docs-only write restriction is enforced for this path).
 
-### Provider retry attempts
+### Provider retry attempts (inert)
 
-Set `ARGUSWIKI_PROVIDER_RETRY_ATTEMPTS` to override the number of retries after
-the first provider request. The value must be a positive integer:
+`ARGUSWIKI_PROVIDER_RETRY_ATTEMPTS` is still validated and stored (must be a positive integer, defaults to 3 when unset), but nothing in the current run path applies it — there is no LangChain model client left to configure retries on. The spawned `claude` CLI process either succeeds or the run fails; ArgusWiki does not retry it.
 
 ```bash
 ARGUSWIKI_PROVIDER_RETRY_ATTEMPTS=3
 ```
-
-If the value is unset, ArgusWiki defaults to 3 retries.
-
-### Alternative base URLs
-
-Set `ANTHROPIC_BASE_URL` to route the anthropic provider at an alternative,
-Anthropic-compatible endpoint (for example a self-hosted or proxied gateway)
-instead of the default API. When set, it is passed to `ChatAnthropic` as
-`anthropicApiUrl`; the `ANTHROPIC_API_KEY` is still sent as the request
-credential.
-
-### OpenAI-compatible provider
-
-The `openai-compatible` provider targets any OpenAI-compatible chat-completions
-endpoint. It has no default endpoint, so `OPENAI_COMPATIBLE_BASE_URL` is
-**required** (the interactive setup prompts for it, and a run aborts early if it
-is missing). This is useful for OpenAI-compatible LLM endpoints such as those
-exposed by a LiteLLM gateway, which lets you reach whatever upstream providers
-the gateway fronts through a single OpenAI-shaped API.
-Because the provider has no preset model
-list, set `ARGUSWIKI_MODEL_ID` (or pick "custom model ID" in setup) to whatever
-name the gateway exposes.
-
-```bash
-ARGUSWIKI_PROVIDER=openai-compatible
-OPENAI_COMPATIBLE_API_KEY=<gateway key>
-OPENAI_COMPATIBLE_BASE_URL=https://<gateway>/v1
-ARGUSWIKI_MODEL_ID=<model name the gateway exposes>
-```
-
-Base URLs are resolved by `resolveProviderBaseUrl()` in `src/constants.ts`, which
-prefers a provider's `baseUrlEnvKey` override over the built-in default.
-
-### Google Vertex AI (Claude) provider
-
-The `vertex` provider runs Claude models through Google Vertex AI using the
-existing `ChatAnthropic` class with a custom `AnthropicVertex` client
-(`@anthropic-ai/vertex-sdk`). It has **no API key**: authentication uses Google
-Application Default Credentials (a service account key via
-`GOOGLE_APPLICATION_CREDENTIALS`, `gcloud auth application-default login`, or
-workload identity). `GOOGLE_CLOUD_PROJECT` is required;
-`GOOGLE_CLOUD_LOCATION` is optional and defaults to `global` (resolved by
-`resolveProviderLocation()` in `src/constants.ts`).
-
-```bash
-ARGUSWIKI_PROVIDER=vertex
-GOOGLE_CLOUD_PROJECT=<gcp project id>
-GOOGLE_CLOUD_LOCATION=global   # optional
-```
-
-Vertex Claude model IDs may carry an `@`-versioned suffix (for example
-`claude-haiku-4-5@20251001`), which the model-ID validator accepts.
 
 ## Help text and validation
 
@@ -168,11 +95,9 @@ The help content is centralized in `src/commands.ts` and is used by the CLI UI. 
 ## What to change when editing the CLI
 
 - Update parser behavior in `src/commands.ts` first.
-- Then update any user-visible text in `src/cli.tsx` and `README.md`.
+- Then update any user-visible text in `src/cli.tsx` and `README.md` (note: `README.md` currently describes the removed multi-provider stack — verify against `src/constants.ts` before trusting it as a source).
 - If new options affect run behavior, make sure `src/agent/index.ts` and `src/credentials.tsx` still receive the right inputs.
-- If adding a provider, update `PROVIDER_CONFIGS` and `SELECTABLE_ARGUSWIKI_PROVIDERS` in `src/constants.ts`, `managedEnvKeys` in `src/env.ts`, and the `createModel` branch in `src/agent/index.ts`. OAuth-based providers (like `openai-chatgpt`) additionally need a token refresh flow and a dedicated branch in `createModel` that reads tokens from `process.env`. `apiKeyEnvKey` is optional — a provider without one (like `vertex`) instead declares the env keys it needs (e.g. `projectEnvKey`), and `getMissingProviderEnvKey()` gates runs on whichever required key is absent.
-- To let a provider accept an alternative base URL, set `baseUrlEnvKey` on its `PROVIDER_CONFIGS` entry, add that key to `managedEnvKeys` in `src/env.ts`, and read it through `resolveProviderBaseUrl()` in the provider's `createModel` branch.
-- To require a user-supplied base URL (a provider with no default endpoint, like `openai-compatible`), also set `requiresBaseUrl: true`. `ensureProviderBaseUrl()` in `src/agent/index.ts` enforces it at runtime, and the interactive setup adds a base-URL step for such providers.
+- Re-adding a model provider means restoring the removed multi-provider stack (a `createModel()`-equivalent, a LangChain/DeepAgents-based model client, and a `PROVIDER_CONFIGS`/`ArgusWikiProvider` entry in `src/constants.ts`), not just a config edit — there is currently no model-creation branch to extend.
 - Re-check the `package.json` bin entry and scripts if the entrypoint changes.
 
 ## Source map
@@ -183,11 +108,10 @@ The help content is centralized in `src/commands.ts` and is used by the CLI UI. 
 - `src/constants.ts`
 - `src/env.ts`
 - `src/agent/index.ts`
-- `src/agent/openai-chatgpt-oauth.ts`
+- `src/agent/claude-cli/claude-cli-backend.ts`
 - `src/auth/oauth.ts`
 - `src/auth/providers.ts`
 - `src/auth/configure.ts`
 - `src/auth/ngrok.ts`
 - `README.md`
 - `package.json`
-- Git evidence: commits `ceded10`, `f89b05d`, `fd3a702`, `8278c36`, `0fa1430`

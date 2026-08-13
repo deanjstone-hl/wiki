@@ -11,19 +11,18 @@ ArgusWiki has a small but layered architecture:
 
 1. `src/cli.tsx` provides the interactive terminal application and orchestrates runs, including auto-exit for init/update.
 2. `src/commands.ts` parses argv and defines help text and supported options, including `auth`, `ngrok`, `cron`, and `ingest` subcommands.
-3. `src/credentials.tsx` manages interactive onboarding for provider selection, API keys, model selection, and optional LangSmith tracing.
-4. `src/env.ts` reads and writes `~/.arguswiki/.env` and surfaces credential diagnostics for all supported providers.
-5. `src/agent/index.ts` runs the documentation agent, resolves the provider, creates the appropriate model client, collects Git context, and writes update metadata.
+3. `src/credentials.tsx` manages interactive onboarding. It still contains the generic provider-selection/API-key/model-selection/LangSmith-tracing UI scaffolding from the upstream multi-provider version, but that path is effectively dead: `SELECTABLE_ARGUSWIKI_PROVIDERS` is empty and the sole provider (`claude-cli`) is keyless, so there is nothing to prompt for except the optional LangSmith key.
+4. `src/env.ts` reads and writes `~/.arguswiki/.env` and surfaces credential diagnostics for every managed key — including a long list of legacy provider API-key/OAuth-token keys (OpenAI, OpenRouter, Anthropic, Baseten, Fireworks, NVIDIA, Vertex, ChatGPT OAuth) that are still tracked for env-file hygiene/diagnostics but are not read by any active provider.
+5. `src/agent/index.ts` runs the documentation agent: loads env, syncs bundled skills, checks the update-noop condition, collects Git context, and always dispatches to the `claude-cli` backend (there is no other provider to resolve to).
 6. `src/agent/prompt.ts` builds the system and user prompts that tell the model how to behave.
 7. `src/agent/utils.ts` gathers Git evidence, computes an ArgusWiki content snapshot, and records `.last-update.json` after successful init/update runs.
-8. `src/agent/docs-only-backend.ts` provides `ArgusWikiLocalShellBackend`, extending DeepAgents `LocalShellBackend` with docs-only write guards and output-mode awareness.
-9. `src/agent/openai-chatgpt-oauth.ts` implements the ChatGPT OAuth login flow, token persistence, and refresh for the `openai-chatgpt` provider.
-10. `src/auth/` contains the connector OAuth system: `oauth.ts` (generic runner), `providers.ts` (provider configs), `configure.ts` (`openwiki auth configure`), `ngrok.ts` (Slack HTTPS tunnel), `tokens.ts` (refresh/validation), and `types.ts`.
-11. `src/connectors/` contains the connector registry, MCP client/runtime, source-specific ingestion modules (git-repo, gmail, hackernews, slack, web-search, x), and tool definitions exposed to the agent.
-12. `src/ingestion.ts` orchestrates source ingestion runs across configured connectors.
-13. `src/code-mode.ts` handles `openwiki code` setup: writes a GitHub Actions workflow and AGENTS.md/CLAUDE.md snippets.
-14. `src/constants.ts` centralizes provider configs, model options, environment keys, validation helpers, and the wiki directory names.
-15. `src/agent/types.ts` defines shared types: `ArgusWikiCommand`, `RunContext`, `UpdateMetadata`, and run option/event interfaces.
+8. `src/agent/skills.ts` syncs the bundled `skills/` directory (`migrate-wiki-to-okf`, `write-connector`) into `~/.arguswiki/skills` on every run.
+9. `src/auth/` contains the connector OAuth system: `oauth.ts` (generic runner), `providers.ts` (provider configs), `configure.ts` (`openwiki auth configure`), `ngrok.ts` (Slack HTTPS tunnel), `tokens.ts` (refresh/validation), and `types.ts`. This is connector auth (Gmail/Notion/Slack/X), unrelated to model-provider auth.
+10. `src/connectors/` contains the connector registry, MCP client/runtime, source-specific ingestion modules (git-repo, gmail, hackernews, slack, web-search, x), and tool definitions exposed to the agent.
+11. `src/ingestion.ts` orchestrates source ingestion runs across configured connectors.
+12. `src/code-mode.ts` handles `openwiki code` setup: writes a GitHub Actions workflow and AGENTS.md/CLAUDE.md snippets.
+13. `src/constants.ts` centralizes the (now single-provider) provider config, model options, environment keys, validation helpers, and the wiki directory names.
+14. `src/agent/types.ts` defines shared types: `ArgusWikiCommand`, `RunContext`, `UpdateMetadata`, and run option/event interfaces.
 
 ## Runtime shape
 
@@ -43,29 +42,15 @@ For non-chat runs, the agent receives a `RunContext` that includes last-update m
 - `git log --since <updatedAt> --name-status --oneline` (update with only a timestamp)
 - `git diff --name-status HEAD`
 
-### Provider and model resolution
+### Provider resolution (single provider only)
 
-The agent runtime resolves the provider via `resolveConfiguredProvider()` in `src/constants.ts`:
+This fork removed the upstream multi-provider stack. `resolveConfiguredProvider()` in `src/constants.ts` still exists but is now trivial: it normalizes `ARGUSWIKI_PROVIDER` and falls back to `DEFAULT_PROVIDER`, and both resolve to the same value because `ArgusWikiProvider` has exactly one member — `"claude-cli"`. There is no fallback chain over provider API keys anymore (the old OpenAI/OpenRouter/Anthropic/Baseten/Fireworks/NVIDIA order is gone from source, even though some docs and `README.md` still describe it).
 
-1. If `ARGUSWIKI_PROVIDER` is set and valid, use it.
-2. Otherwise, use the first available provider API key in this order: OpenAI, OpenAI-compatible, OpenRouter, Anthropic, Baseten, Fireworks, then NVIDIA.
-3. Otherwise, fall back to `DEFAULT_PROVIDER` (`openai`) and its default model (`gpt-5.6-terra`).
+`src/agent/index.ts` has no `createModel()` function and no per-provider model-creation branches. It always calls `runClaudeCliAgent()` (`src/agent/claude-cli/claude-cli-backend.ts`), which spawns the operator's already-authenticated `claude` CLI binary as a subprocess. It has its own prompt builder (`src/agent/claude-cli/prompt.ts`) and enforces the docs-only write restriction via a `PreToolUse` hook (`write-guard-hook.ts` / `write-guard.ts`). It is keyless (no API key/OAuth) — `resolveConfiguredProvider()` is called only for debug logging — and v1 scope supports only `repository` output mode; passing `local-wiki` throws. See [Agent workflow](../agent/workflow.md) for the full flow.
 
-Model creation branches by provider in `src/agent/index.ts` (`createModel`):
+### No DeepAgents backend
 
-- **vertex** → `ChatAnthropic` with a custom `createClient` returning an `AnthropicVertex` client (`@anthropic-ai/vertex-sdk`) configured from `GOOGLE_CLOUD_PROJECT` and `resolveProviderLocation()` (default `global`); auth is Google Application Default Credentials, no API key.
-- **anthropic** → `ChatAnthropic` with the Anthropic API key.
-- **openai-chatgpt** → `ChatOpenAI` with `useResponsesApi: true`, `zdrEnabled: true`, `streaming: true`, pointed at the Codex backend (`CODEX_RESPONSES_BASE_URL`) with account-id/originator/beta headers. Tokens are refreshed before model creation via `ensureFreshChatGptTokens()`.
-- **openrouter** → `ChatOpenRouter` with the selected model ID.
-- **openai** → `ChatOpenAI` with `useResponsesApi: true`.
-- **baseten / fireworks / nvidia / openai-compatible** → `ChatOpenAI` with the provider's API key and optional custom `baseURL` from `PROVIDER_CONFIGS`.
-- **claude-cli** → does not use `createModel`/DeepAgents at all. `src/agent/index.ts` branches to `runClaudeCliAgent()` (`src/agent/claude-cli/claude-cli-backend.ts`) before model creation, spawning the operator's already-authenticated `claude` CLI binary as a subprocess. It has its own prompt builder (`src/agent/claude-cli/prompt.ts`) and re-enforces the docs-only write restriction via a `PreToolUse` hook (`write-guard-hook.ts` / `write-guard.ts`) instead of `ArgusWikiLocalShellBackend`, since this path bypasses DeepAgents entirely. It is keyless (no API key/OAuth) and deliberately excluded from `SELECTABLE_ARGUSWIKI_PROVIDERS` — opt-in only via `ARGUSWIKI_PROVIDER=claude-cli` — and v1 supports only `repository` output mode. See [Agent workflow](../agent/workflow.md) for the full flow.
-
-Credential gating before model creation uses `getMissingProviderEnvKey()` in `src/constants.ts`, which requires the provider's API key — or `GOOGLE_CLOUD_PROJECT` for vertex — and powers the same check in the CLI's non-interactive gates and the onboarding flow.
-
-### DeepAgents backend
-
-The agent uses a DeepAgents `LocalShellBackend` rooted at the repository, configured with `virtualMode: true`, `maxOutputBytes: 100_000`, and a 120 second timeout. A SQLite checkpointer (`~/.arguswiki/arguswiki.sqlite`) persists conversation threads keyed by a hash of the repository path.
+There is no DeepAgents `LocalShellBackend`, virtual filesystem, or SQLite-checkpointed conversation thread in this fork's run path — those were part of the removed LangChain/LangGraph execution core. The spawned `claude` CLI subprocess uses its own native filesystem tools (Read/Write/Edit/Bash/Grep/Glob) against real repository paths instead. A `resolveCheckpointTarget()` helper and an `arguswiki.sqlite` checkpoint path still exist in `src/agent/index.ts`, but nothing in the current run path calls it — treat it as unused legacy code, not an active mechanism, unless a source change proves otherwise.
 
 ### Content snapshot and metadata writes
 
@@ -81,28 +66,26 @@ The current design reflects a documentation product rather than a general-purpos
 
 - The CLI owns user experience and credential bootstrap so the tool is install-and-run friendly.
 - Git evidence is collected in the host process before the agent starts so the model sees stable repository context.
-- Provider support is centralized in `src/constants.ts` so adding a provider is a single-config change plus a model-creation branch.
-- Model execution is provider-stable: transient request failures can retry through the selected LangChain model client, but ArgusWiki surfaces the final error instead of continuing with another model.
+- The provider abstraction (`ArgusWikiProvider`, `PROVIDER_CONFIGS`) is kept in `src/constants.ts` even with a single member, so the codebase still has a defined seam if a provider were ever reintroduced — but doing so today means restoring the removed model-client code, not just a config edit.
+- Model execution goes through a single subprocess CLI call: `claude` handles its own retry/model behavior internally, and ArgusWiki surfaces the final `claude` CLI result (or error) rather than retrying across model clients itself.
 - The content-snapshot check prevents metadata churn when an update run produces no documentation changes, which is important for scheduled CI workflows.
 - Auto-exit for init/update makes the CLI usable in both interactive and one-shot contexts without requiring `--print`.
 
 ## Major extension points
 
 - Add or refine CLI commands in `src/commands.ts` and the corresponding UI behavior in `src/cli.tsx`.
-- Change onboarding or local credential storage in `src/credentials.tsx` and `src/env.ts`.
-- Add a new model provider by extending `PROVIDER_CONFIGS` and `ArgusWikiProvider` in `src/constants.ts`, then adding a branch in `createModel` in `src/agent/index.ts`.
-- Adjust model defaults, validation, or fallback lists in `src/constants.ts`.
-- Extend the documentation prompt or Git evidence in `src/agent/prompt.ts` and `src/agent/utils.ts`.
+- Change onboarding or local credential storage in `src/credentials.tsx` and `src/env.ts` (note: the interactive provider-selection UI in `src/credentials.tsx` is currently unreachable — there is nothing to select).
+- Extend the documentation prompt or Git evidence in `src/agent/claude-cli/prompt.ts` and `src/agent/utils.ts`.
 - Modify run persistence or snapshot behavior in `src/agent/utils.ts`.
+- Add or change a bundled skill under `skills/` and `src/agent/skills.ts`.
 
 ## Things to watch when editing
 
 - `src/cli.tsx` and `src/commands.ts` must stay aligned; help text and parser behavior are intentionally coupled.
 - Credential setup writes to a real home-directory file, so permission handling matters.
-- The agent is expected to work from repository-local virtual paths like `/README.md` and `/openwiki/quickstart.md`; the prompt explicitly warns about this.
 - `openwiki/` in the target repository is both the docs output location and the metadata location for `.last-update.json`.
-- When adding a provider, update `managedEnvKeys` in `src/env.ts` so diagnostics and env formatting cover the new key.
 - The content-snapshot logic excludes `.last-update.json`; if new metadata files are added under `openwiki/`, decide whether they should be excluded too.
+- **`local-wiki` output mode (personal/connector-synthesis mode) currently throws.** `runClaudeCliAgent()` unconditionally rejects any `outputMode` other than `"repository"`, but `openwiki personal --init/--update` and the synthesis step of `openwiki ingest` both request `local-wiki`. Confirm this is still the case (`src/agent/claude-cli/claude-cli-backend.ts`) before relying on personal-mode or ingestion-synthesis docs elsewhere in this wiki as descriptions of currently-working behavior; they describe the intended/upstream design, not a verified-working path under this fork.
 
 ## Source map
 
@@ -111,11 +94,9 @@ The current design reflects a documentation product rather than a general-purpos
 - `src/credentials.tsx`
 - `src/env.ts`
 - `src/agent/index.ts`
-- `src/agent/prompt.ts`
 - `src/agent/utils.ts`
 - `src/agent/types.ts`
-- `src/agent/docs-only-backend.ts`
-- `src/agent/openai-chatgpt-oauth.ts`
+- `src/agent/skills.ts`
 - `src/agent/claude-cli/claude-cli-backend.ts`
 - `src/agent/claude-cli/prompt.ts`
 - `src/agent/claude-cli/write-guard.ts`
@@ -133,4 +114,3 @@ The current design reflects a documentation product rather than a general-purpos
 - `src/code-mode.ts`
 - `src/constants.ts`
 - `package.json`
-- Git evidence: commits `ceded10`, `f89b05d`, `fd3a702`, `8278c36`, `0fa1430`

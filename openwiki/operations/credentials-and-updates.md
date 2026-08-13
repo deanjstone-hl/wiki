@@ -34,17 +34,14 @@ native dependency build begins.
 
 The docs output directory in the target repository is similarly overridable via `ARGUSWIKI_OUTPUT_DIR` (`OPEN_WIKI_DIR` in `src/constants.ts`, defaults to `arguswiki`); this also moves where `.last-update.json` is read and written. **This package's own scheduled workflow explicitly sets `ARGUSWIKI_OUTPUT_DIR: openwiki`** so it keeps writing to the existing, already-committed `apps/wiki/openwiki/` content instead of starting a new `apps/wiki/arguswiki/` directory — `OPEN_WIKI_DIR`'s default changed from `openwiki` to `arguswiki` as part of the OpenWiki→ArgusWiki rename, and without the override the next scheduled run would silently orphan this directory. `ARGUSWIKI_HOME` (the tool's own config/cache home on the machine running it) is not overridden and is unrelated to this per-repo output path.
 
-The file stores provider configuration and API keys:
+The file stores model-provider and connector configuration:
 
-- `ARGUSWIKI_PROVIDER` — the selected model provider (the `claude-cli` provider stores nothing here — it is keyless and reuses the operator's already-authenticated `claude` CLI; see [CLI usage: Claude Code CLI provider](../cli/usage.md#claude-code-cli-provider))
-- `ARGUSWIKI_MODEL_ID` — the default model ID
-- `ARGUSWIKI_PROVIDER_RETRY_ATTEMPTS` — optional positive integer retry count for transient provider request failures; defaults to 3 when unset
-- Provider API keys: `OPENROUTER_API_KEY`, `OPENAI_API_KEY`, `OPENAI_COMPATIBLE_API_KEY`, `ANTHROPIC_API_KEY`, `BASETEN_API_KEY`, `FIREWORKS_API_KEY`
-- ChatGPT OAuth tokens (for the `openai-chatgpt` provider): `OPENAI_CHATGPT_ACCESS_TOKEN`, `OPENAI_CHATGPT_REFRESH_TOKEN`, `OPENAI_CHATGPT_EXPIRES_AT`, `OPENAI_CHATGPT_ACCOUNT_ID`, `OPENAI_CHATGPT_EMAIL`, `OPENAI_CHATGPT_PLAN`
-- Connector OAuth credentials: `ARGUSWIKI_GMAIL_ACCESS_TOKEN`, `ARGUSWIKI_GMAIL_REFRESH_TOKEN`, `ARGUSWIKI_GOOGLE_CLIENT_ID`, `ARGUSWIKI_GOOGLE_CLIENT_SECRET`, `ARGUSWIKI_NOTION_MCP_ACCESS_TOKEN`, `ARGUSWIKI_NOTION_MCP_CLIENT_ID`, `ARGUSWIKI_NOTION_MCP_REFRESH_TOKEN`, `ARGUSWIKI_SLACK_USER_TOKEN`, `ARGUSWIKI_SLACK_CLIENT_ID`, `ARGUSWIKI_SLACK_CLIENT_SECRET`, `ARGUSWIKI_X_ACCESS_TOKEN`, `ARGUSWIKI_X_CLIENT_ID`, `ARGUSWIKI_X_CLIENT_SECRET`, `ARGUSWIKI_X_REFRESH_TOKEN`
-- Base URLs: `ANTHROPIC_BASE_URL` (optional — routes the anthropic provider at an Anthropic-compatible endpoint other than the default API) and `OPENAI_COMPATIBLE_BASE_URL` (required by the openai-compatible provider, which has no default endpoint)
+- `ARGUSWIKI_PROVIDER` — the selected model provider. This fork has exactly one: `claude-cli` (also the default), which stores nothing here — it is keyless and reuses the operator's already-authenticated `claude` CLI; see [CLI usage: Claude Code CLI provider](../cli/usage.md#claude-code-cli-provider)
+- `ARGUSWIKI_MODEL_ID` — passed through to `claude --model` when set
+- `ARGUSWIKI_PROVIDER_RETRY_ATTEMPTS` — still validated and stored, but inert (no LangChain model client left to configure retries on); see [Agent workflow: Model errors](../agent/workflow.md#model-errors)
+- **Legacy provider keys (managed but unused):** `src/env.ts` still tracks a full set of upstream provider credentials — `OPENROUTER_API_KEY`, `OPENAI_API_KEY`, `OPENAI_COMPATIBLE_API_KEY`, `ANTHROPIC_API_KEY`, `BASETEN_API_KEY`, `FIREWORKS_API_KEY`, `NEBIUS_API_KEY`, `NVIDIA_API_KEY`, `GEMINI_API_KEY`, ChatGPT OAuth tokens (`OPENAI_CHATGPT_ACCESS_TOKEN`, `OPENAI_CHATGPT_REFRESH_TOKEN`, `OPENAI_CHATGPT_EXPIRES_AT`, `OPENAI_CHATGPT_ACCOUNT_ID`, `OPENAI_CHATGPT_EMAIL`, `OPENAI_CHATGPT_PLAN`), Bedrock AWS credentials, base URLs (`ANTHROPIC_BASE_URL`, `OPENAI_COMPATIBLE_BASE_URL`), and Google Cloud settings (`GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION`, `GOOGLE_APPLICATION_CREDENTIALS`) — for env-file hygiene and diagnostics display only. None of these are read by the current single-provider runtime; only `claude-cli` in `PROVIDER_CONFIGS` is active.
+- Connector OAuth credentials (still active, unrelated to model providers): `ARGUSWIKI_GMAIL_ACCESS_TOKEN`, `ARGUSWIKI_GMAIL_REFRESH_TOKEN`, `ARGUSWIKI_GOOGLE_CLIENT_ID`, `ARGUSWIKI_GOOGLE_CLIENT_SECRET`, `ARGUSWIKI_NOTION_MCP_ACCESS_TOKEN`, `ARGUSWIKI_NOTION_MCP_CLIENT_ID`, `ARGUSWIKI_NOTION_MCP_REFRESH_TOKEN`, `ARGUSWIKI_SLACK_USER_TOKEN`, `ARGUSWIKI_SLACK_CLIENT_ID`, `ARGUSWIKI_SLACK_CLIENT_SECRET`, `ARGUSWIKI_X_ACCESS_TOKEN`, `ARGUSWIKI_X_CLIENT_ID`, `ARGUSWIKI_X_CLIENT_SECRET`, `ARGUSWIKI_X_REFRESH_TOKEN`
 - Connector API keys: `TAVILY_API_KEY` for Web Search
-- Google Cloud settings for the vertex provider: `GOOGLE_CLOUD_PROJECT` (required to run vertex), `GOOGLE_CLOUD_LOCATION` (optional, defaults to `global`), and `GOOGLE_APPLICATION_CREDENTIALS` (optional service-account key file path; never prompted for — Google Application Default Credentials handle auth)
 - Optional LangSmith settings: `LANGSMITH_API_KEY`, `LANGCHAIN_PROJECT`, `LANGCHAIN_TRACING_V2`
 - Optional OAuth callback settings: `ARGUSWIKI_OAUTH_CALLBACK_PORT` controls the
   local callback port, and `ARGUSWIKI_HTTPS_OAUTH_REDIRECT_URI` stores the
@@ -72,18 +69,13 @@ Hacker News uses public read-only APIs and does not require credentials. The
 connector can fetch top/new/best/show/ask/job feeds and configured search
 queries.
 
-`src/credentials.tsx` provides the interactive bootstrap flow when required:
+`src/credentials.tsx` still contains the interactive bootstrap flow from the upstream multi-provider version — provider selection, API key/model prompts, LangSmith key — but with `SELECTABLE_ARGUSWIKI_PROVIDERS` empty and the sole provider (`claude-cli`) keyless, there is nothing left to prompt for except the optional LangSmith key. `needsCredentialSetup()` still gates whether the flow runs at all. Deprecated OpenAI-related environment variables (`OPENAI_ORG_ID`, `OPENAI_PROJECT`) are still stripped on save.
 
-- prompts for a provider (arrow-key selection menu),
-- prompts for the provider's API key (skipped for the vertex provider, which prompts for a required Google Cloud project ID and an optional location instead),
-- prompts for a model choice (arrow-key selection from the provider's model list, or a custom model ID),
-- optionally prompts for a LangSmith key,
-- writes the results with restrictive file permissions,
-- removes deprecated OpenAI-related environment variables when saving.
-
-The setup flow runs for **all** interactive commands (chat, init, and update) when credentials are missing — not just chat. In non-interactive mode (no TTY or `--print`), missing provider keys produce an error instead of a prompt.
+The setup flow runs for **all** interactive commands (chat, init, and update) when it decides setup is needed — not just chat. In non-interactive mode (no TTY or `--print`), a genuinely missing required value produces an error instead of a prompt.
 
 ## First-run onboarding profile
+
+> **Personal/local-wiki mode currently errors at run time.** The rest of this section (templates, connector onboarding, `onboarding.json`, local schedules) describes machinery that still exists and still runs for *deterministic* connector ingestion, but the wiki-*synthesis* step — and all of `openwiki personal --init/--update` — goes through `runClaudeCliAgent()`, which unconditionally rejects `local-wiki` output mode. See [Agent workflow: Claude Code CLI provider](../agent/workflow.md#claude-code-cli-provider) and [CLI usage](../cli/usage.md#credentials-and-onboarding).
 
 After model setup, first-run onboarding lets the user choose one of five wiki
 templates: Personal Work OS, AI Research Radar, Git Project Wiki, Social Media
@@ -152,13 +144,14 @@ saved repeat `pmset` schedule and marks the saved wake window disabled.
 
 ## Provider resolution
 
-`resolveConfiguredProvider()` in `src/constants.ts` determines the active provider:
+`resolveConfiguredProvider()` in `src/constants.ts` is now a two-step fallback with only one possible outcome:
 
 1. If `ARGUSWIKI_PROVIDER` is set and valid, use it.
-2. Otherwise, use the first available provider API key in this order: OpenAI, OpenAI-compatible, OpenRouter, Anthropic, Baseten, Fireworks, then NVIDIA.
-3. Otherwise, fall back to `DEFAULT_PROVIDER` (`openai`) and its default model (`gpt-5.6-terra`).
+2. Otherwise, fall back to `DEFAULT_PROVIDER`.
 
-`needsCredentialSetup()` in `src/credentials.tsx` checks whether the provider env var is valid and whether the provider's required credentials (its API key, or `GOOGLE_CLOUD_PROJECT` for vertex — via `getMissingProviderEnvKey()` in `src/constants.ts`), a model ID (unless overridden), and a LangSmith key are all present. Any missing value or invalid provider triggers the interactive flow.
+Both `ARGUSWIKI_PROVIDER=claude-cli` and `DEFAULT_PROVIDER` resolve to `"claude-cli"` — the only member of `ArgusWikiProvider`. The old fallback-by-API-key chain (OpenAI, OpenAI-compatible, OpenRouter, Anthropic, Baseten, Fireworks, NVIDIA) no longer exists in source.
+
+`needsCredentialSetup()` in `src/credentials.tsx` checks whether the provider env var is valid and whether the provider's required credentials (`getMissingProviderEnvKey()` in `src/constants.ts` — always `null` for the keyless `claude-cli` provider), a model ID (unless overridden), and a LangSmith key are all present. In practice only a missing LangSmith key or an explicitly invalid `ARGUSWIKI_PROVIDER` value can still trigger the interactive flow.
 
 ## Model and credential diagnostics
 
@@ -172,7 +165,7 @@ The env layer also produces diagnostics for the CLI UI. Those diagnostics report
 - invalid model IDs,
 - invalid provider values.
 
-Diagnostics cover all provider keys (including `OPENAI_CHATGPT_ACCESS_TOKEN` and related ChatGPT OAuth tokens), plus `ARGUSWIKI_PROVIDER`, `ARGUSWIKI_MODEL_ID`, `ARGUSWIKI_PROVIDER_RETRY_ATTEMPTS`, the base URLs (`ANTHROPIC_BASE_URL`, `OPENAI_COMPATIBLE_BASE_URL`), the Google Cloud settings (`GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION`, `GOOGLE_APPLICATION_CREDENTIALS`), connector credentials, and `LANGSMITH_API_KEY`. This makes startup problems easier to diagnose without exposing secret values (non-secret values such as the provider, model ID, retry attempts, base URLs, and the Google Cloud settings are shown in full — the service-account key _path_ is not a secret, though the file it points to is).
+Diagnostics still cover every managed key from `src/env.ts` — including the legacy provider keys described above (OpenAI, OpenRouter, Anthropic, Baseten, Fireworks, NVIDIA, ChatGPT OAuth, base URLs, Google Cloud settings) even though none of them are read by the active `claude-cli` provider — plus `ARGUSWIKI_PROVIDER`, `ARGUSWIKI_MODEL_ID`, `ARGUSWIKI_PROVIDER_RETRY_ATTEMPTS`, connector credentials, and `LANGSMITH_API_KEY`. This makes startup problems and leftover configuration easier to diagnose without exposing secret values (non-secret values such as the provider, model ID, and retry attempts are shown in full).
 
 ## Update metadata
 
@@ -195,13 +188,12 @@ The repository includes `examples/arguswiki-update.yml` as a copyable GitHub Act
 - checks out the repository,
 - installs Node.js 22,
 - installs ArgusWiki globally,
-- runs `openwiki code --update --print`,
-- passes `OPENROUTER_API_KEY`, `ARGUSWIKI_MODEL_ID`, and `LANGSMITH_API_KEY` from GitHub secrets,
-- classifies the resulting `openwiki/` diff as **structural** or **routine**,
+- runs `arguswiki code --update --print` with `ARGUSWIKI_PROVIDER: claude-cli` set — no API key or GitHub secrets are passed for model access; the runner needs an already-installed, already-authenticated `claude` CLI instead (the example workflow itself does not install one),
+- classifies the resulting `arguswiki/` diff as **structural** or **routine**,
 - opens a pull request with `peter-evans/create-pull-request` scoped to the `openwiki` directory, `AGENTS.md`, `CLAUDE.md`, and the workflow file itself, with the classification and reason in the PR body,
 - auto-merges the PR (`gh pr merge --auto --squash`) only when the classification is routine.
 
-The classification step treats a change as **structural** — left for manual review — when it touches the workflow file itself, adds new file(s) under `openwiki/`, adds a new `##`/`###` heading, or changes a markdown link; everything else (prose-only edits to existing pages) is **routine** and auto-merges. The workflow file is force-classified structural unconditionally, so a change to the automation itself can never be silently auto-merged even though it stays in `add-paths` to support first-time setup. This package's own scheduled workflow, `.github/workflows/wiki-arguswiki-update.yml`, lives at the monorepo root (not inside this package) and sets `working-directory: apps/wiki`; it runs the identical classify/auto-merge logic against a self-hosted runner and the `claude-cli` provider instead of `openrouter`, and scopes its `add-paths` to `apps/wiki/openwiki`, `apps/wiki/AGENTS.md`, `apps/wiki/CLAUDE.md`, and the workflow file itself. It also sets `ARGUSWIKI_OUTPUT_DIR: openwiki` explicitly — see the note above about why that override exists.
+The classification step treats a change as **structural** — left for manual review — when it touches the workflow file itself, adds new file(s) under `arguswiki/`, adds a new `##`/`###` heading, or changes a markdown link; everything else (prose-only edits to existing pages) is **routine** and auto-merges. The workflow file is force-classified structural unconditionally, so a change to the automation itself can never be silently auto-merged even though it stays in `add-paths` to support first-time setup. `examples/arguswiki-update.yml` itself now also sets `ARGUSWIKI_PROVIDER: claude-cli` (no provider secrets passed) — it no longer defaults to a hosted-API provider like `openrouter`. This package's own scheduled workflow, `.github/workflows/wiki-arguswiki-update.yml`, lives at the monorepo root (not inside this package) and sets `working-directory: apps/wiki`; it runs the identical classify/auto-merge logic against a self-hosted runner (which is what makes an already-authenticated `claude` CLI available), and scopes its `add-paths` to `apps/wiki/openwiki`, `apps/wiki/AGENTS.md`, `apps/wiki/CLAUDE.md`, and the workflow file itself. It also sets `ARGUSWIKI_OUTPUT_DIR: openwiki` explicitly — see the note above about why that override exists.
 
 The workflow is a good reference for automated maintenance. The monorepo's `.github/workflows/ci.yml` also runs a `wiki` job against this package (typecheck, lint, build, a CLI smoke test — `node dist/cli.js code --dry-run --init` with `ARGUSWIKI_DEV=1` — and tests) plus a sibling `wiki-audit` job that runs a Trivy dependency scan (`scan-ref: apps/wiki`, `severity: HIGH,CRITICAL`, `exit-code: 1`) and uploads the SARIF results. (This `ARGUSWIKI_DEV` env var name is a common source of drift: it was `OPENWIKI_DEV` until the OpenWiki→ArgusWiki rename, and CI's use of the env var must stay in sync with `isDevelopmentMode()` in `src/commands.ts`.)
 
@@ -211,8 +203,9 @@ The workflow is a good reference for automated maintenance. The monorepo's `.git
 - Never document real secret values; only document the presence and purpose of the configuration.
 - If update metadata semantics change, update both the agent runtime and the docs that explain how update runs are scoped.
 - Scheduled automation depends on the same CLI entrypoint as local users, so workflow changes should be validated against `package.json` and the CLI help text.
-- When adding a provider, update `managedEnvKeys` in `src/env.ts` so the env file is formatted correctly and diagnostics cover the new key. Providers without an API key (like vertex) declare their required env keys in `PROVIDER_CONFIGS` (e.g. `projectEnvKey`) and are gated by `getMissingProviderEnvKey()`.
+- Re-adding a model provider means restoring the removed multi-provider stack (see [CLI usage: Provider and model selection](../cli/usage.md#provider-and-model-selection)), not a small config edit — there is no active `createModel`-equivalent to extend.
 - The content-snapshot check means CI runs that produce no changes will not update `.last-update.json` or open a PR with metadata-only changes.
+- Personal/local-wiki mode (onboarding templates, connector synthesis, local schedules) is documented below as designed, but the synthesis half currently errors under the claude-cli-only provider — see the caveat above.
 
 ## Source map
 
@@ -222,7 +215,7 @@ The workflow is a good reference for automated maintenance. The monorepo's `.git
 - `src/constants.ts`
 - `src/agent/utils.ts`
 - `src/agent/index.ts`
-- `src/agent/openai-chatgpt-oauth.ts`
+- `src/agent/claude-cli/claude-cli-backend.ts`
 - `src/auth/oauth.ts`
 - `src/auth/providers.ts`
 - `src/auth/configure.ts`
@@ -234,4 +227,3 @@ The workflow is a good reference for automated maintenance. The monorepo's `.git
 - `.github/workflows/wiki-arguswiki-update.yml` (monorepo root)
 - `.github/workflows/ci.yml` (monorepo root)
 - `README.md`
-- Git evidence: commits `ceded10`, `f89b05d`, `8278c36`, `0fa1430`, `148a0b9`

@@ -1,7 +1,7 @@
 ---
 type: Quickstart Guide
 title: ArgusWiki Quickstart
-description: Quickstart reference for the ArgusWiki TypeScript CLI, including documentation-generation workflows, supported model providers, and the primary source files. Use it to navigate the repository's architecture, commands, agent runtime, operations, and connectors.
+description: Quickstart reference for the ArgusWiki TypeScript CLI, including documentation-generation workflows, the single keyless claude-cli model provider, and the primary source files. Use it to navigate the repository's architecture, commands, agent runtime, operations, and connectors.
 tags: [arguswiki, quickstart, cli, documentation]
 ---
 
@@ -13,8 +13,8 @@ ArgusWiki is a TypeScript CLI that writes and maintains documentation for a repo
 
 - Launches an interactive Ink-based terminal app for chatting with the ArgusWiki agent.
 - Supports one-shot documentation runs with `--init`, `--update`, and `--print`.
-- Supports multiple model providers — OpenAI (default, API key or ChatGPT OAuth login), OpenRouter, Anthropic, Baseten, Fireworks, NVIDIA NIM, any OpenAI-compatible gateway, and Google Vertex AI (Claude models) — each with their own credentials and model list (Vertex uses Google ADC instead of an API key).
-- Uses a DeepAgents local shell backend with virtual filesystem paths rooted at the target repository.
+- Runs on a single, keyless model provider: `claude-cli` spawns the operator's already-authenticated `claude` CLI binary as a subprocess. This fork removed the upstream multi-provider stack (OpenAI, OpenRouter, Anthropic, Baseten, Fireworks, NVIDIA, Vertex AI, ChatGPT OAuth) and its DeepAgents/LangGraph execution core entirely — see [Agent workflow](./agent/workflow.md) and [deanjstone/argus-wiki#35](https://github.com/deanjstone/argus-wiki/issues/35). `README.md` and parts of `src/credentials.tsx` still describe the old multi-provider onboarding; treat those as stale relative to `src/constants.ts`, where `ArgusWikiProvider` is now narrowed to `"claude-cli"` only.
+- Uses the spawned `claude` CLI's own native filesystem tools (Read/Write/Edit/Bash/Grep/Glob) operating on real repository paths, not a virtual filesystem — there is no DeepAgents `LocalShellBackend` in this fork.
 - Creates or refreshes documentation under the target repository's `arguswiki/` directory by default (`OPEN_WIKI_DIR`, overridable via `ARGUSWIKI_OUTPUT_DIR`); this repository's own docs stay under `openwiki/` via an explicit override — see [Credentials and updates](./operations/credentials-and-updates.md).
 - Auto-exits after successful `--init` or `--update` runs in an interactive terminal, so the CLI works as both a one-shot and interactive tool.
 - Optionally schedules automated updates through GitHub Actions (see `examples/arguswiki-update.yml`).
@@ -33,13 +33,12 @@ ArgusWiki is a TypeScript CLI that writes and maintains documentation for a repo
 - `package.json` — bin entrypoint, scripts, and dependencies.
 - `src/cli.tsx` — Ink UI, command execution, auto-exit, and run lifecycle.
 - `src/commands.ts` — CLI parsing and help content.
-- `src/agent/index.ts` — agent runtime, provider-specific model creation (including ChatGPT OAuth), fallback, and metadata writes.
+- `src/agent/index.ts` — agent runtime entrypoint: loads env, syncs bundled skills, checks the update-noop condition, then always dispatches to the `claude-cli` backend.
 - `src/agent/prompt.ts` — prompt assembly, documentation-run instructions, and AGENTS.md/CLAUDE.md insertion rules.
 - `src/agent/utils.ts` — git evidence collection, content snapshot, and `.last-update.json` handling.
 - `src/agent/types.ts` — shared agent types (`ArgusWikiCommand`, `RunContext`, `UpdateMetadata`, run options/events).
-- `src/agent/docs-only-backend.ts` — `ArgusWikiLocalShellBackend`, extends DeepAgents `LocalShellBackend` with docs-only write guards and output-mode awareness.
-- `src/agent/openai-chatgpt-oauth.ts` — ChatGPT OAuth flow, token persistence, and refresh logic for the `openai-chatgpt` provider.
-- `src/agent/claude-cli/` — keyless `claude-cli` provider backend: spawns the operator's authenticated `claude` CLI as a subprocess instead of calling a hosted API, with its own prompt builder and an out-of-band `PreToolUse` write guard. See [Agent workflow](./agent/workflow.md#claude-code-cli-provider).
+- `src/agent/skills.ts` — syncs the bundled `skills/` directory (`migrate-wiki-to-okf`, `write-connector`) into `~/.arguswiki/skills` on every run.
+- `src/agent/claude-cli/` — the sole provider backend: spawns the operator's authenticated `claude` CLI as a subprocess instead of calling a hosted API, with its own prompt builder and an out-of-band `PreToolUse` write guard. See [Agent workflow](./agent/workflow.md#claude-code-cli-provider).
 - `src/auth/oauth.ts` — generic OAuth runner for connector providers (Gmail, Notion, Slack, X).
 - `src/auth/providers.ts` — connector OAuth provider configs (scopes, token URLs, env-key mappings).
 - `src/auth/configure.ts` — `openwiki auth configure <provider>` flow for creating local connector configs.
@@ -66,7 +65,7 @@ ArgusWiki is a TypeScript CLI that writes and maintains documentation for a repo
 - The repository is intentionally focused: the main product surface is the CLI plus the documentation-generation agent.
 - Treat `openwiki/` in this repo as generated documentation output from a future ArgusWiki run, not as application source (this repo overrides the default output directory name — see [Credentials and updates](./operations/credentials-and-updates.md)).
 - When changing behavior, verify both the CLI parser and the agent prompt/runtime, because user-visible semantics are split across `src/commands.ts`, `src/cli.tsx`, and `src/agent/*`.
-- Provider support is centralized in `src/constants.ts`. Adding or changing a provider means updating `PROVIDER_CONFIGS`, the `ArgusWikiProvider` type, the `SELECTABLE_ARGUSWIKI_PROVIDERS` list, and the model-creation branch in `src/agent/index.ts`. OAuth-based providers also need an entry in `src/auth/` if they use browser-login flows.
+- Provider config lives in `src/constants.ts`, but `ArgusWikiProvider` is narrowed to the single `"claude-cli"` member and `PROVIDER_CONFIGS` has one entry — there is no model-creation branch to extend in `src/agent/index.ts` anymore. Re-adding another provider would mean restoring the removed multi-provider stack, not just editing a config table.
 
 ## Source map
 
@@ -78,8 +77,7 @@ ArgusWiki is a TypeScript CLI that writes and maintains documentation for a repo
 - `src/agent/prompt.ts`
 - `src/agent/utils.ts`
 - `src/agent/types.ts`
-- `src/agent/docs-only-backend.ts`
-- `src/agent/openai-chatgpt-oauth.ts`
+- `src/agent/skills.ts`
 - `src/agent/claude-cli/claude-cli-backend.ts`
 - `src/agent/claude-cli/prompt.ts`
 - `src/agent/claude-cli/write-guard.ts`

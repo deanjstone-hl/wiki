@@ -48,7 +48,9 @@ Agent-facing tools (`src/connectors/tools.ts`) expose this to the LLM during a r
 
 ## Ingestion orchestration
 
-`src/ingestion.ts` (`runArgusWikiIngestion`) loads `~/.arguswiki/.env`, reads onboarding config, builds the connector registry, and resolves a target — `"all"`, a bare `ConnectorId`, or a specific source instance id (connectors can be configured more than once, e.g. `web-search-1`/`web-search-2`, run individually via `openwiki ingest web-search-2`). For each matched instance it runs deterministic ingestion first (writing raw JSON + updating state), then the synthesis agent run reads those raw files to update the wiki. This split — deterministic fetch, then LLM synthesis — keeps credentialed network calls out of model-controlled code paths.
+`src/ingestion.ts` (`runArgusWikiIngestion`) loads `~/.arguswiki/.env`, reads onboarding config, builds the connector registry, and resolves a target — `"all"`, a bare `ConnectorId`, or a specific source instance id (connectors can be configured more than once, e.g. `web-search-1`/`web-search-2`, run individually via `openwiki ingest web-search-2`). For each matched instance it runs deterministic ingestion first (writing raw JSON + updating state), then calls `runArgusWikiAgent("update", ..., { outputMode: "local-wiki" })` so the synthesis agent reads those raw files and updates the wiki. This split — deterministic fetch, then LLM synthesis — keeps credentialed network calls out of model-controlled code paths.
+
+**The synthesis step currently errors.** The agent runtime's only backend, `runClaudeCliAgent()`, unconditionally rejects `local-wiki` output mode (see [Agent workflow: Claude Code CLI provider](../agent/workflow.md#claude-code-cli-provider)). Deterministic ingestion (this section, above) still runs and writes raw JSON under `~/.arguswiki/connectors/<id>/raw/`; only the wiki-synthesis call that follows it fails.
 
 ## Onboarding and scheduling
 

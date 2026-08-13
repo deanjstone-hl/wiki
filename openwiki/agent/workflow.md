@@ -7,65 +7,54 @@ tags: [agent, workflow, documentation, providers, update-metadata]
 
 # Agent workflow
 
-The documentation agent is implemented in `src/agent/`. It takes a command (`chat`, `init`, or `update`), gathers repository context, builds prompts, runs a DeepAgents session, and records successful update metadata — but only if the documentation content actually changed.
+The documentation agent is implemented in `src/agent/`. It takes a command (`chat`, `init`, or `update`), gathers repository context, builds prompts, spawns the `claude` CLI as a subprocess, and records successful update metadata — but only if the documentation content actually changed.
+
+This fork removed the upstream multi-provider DeepAgents/LangGraph execution core (`deanjstone/argus-wiki#35`): there is no `createModel()`, no `ChatAnthropic`/`ChatOpenAI`/`ChatOpenRouter` client, and no DeepAgents `LocalShellBackend`. `src/agent/index.ts` and `src/agent/claude-cli/` are the entire current agent runtime.
 
 ## Main flow
 
-`src/agent/index.ts` follows this sequence for non-chat runs:
+`src/agent/index.ts` follows this sequence for every run (`chat`, `init`, and `update` alike):
 
 1. Load `~/.arguswiki/.env` into `process.env`.
-2. Resolve the provider via `resolveConfiguredProvider()` and ensure the provider's API key exists.
-3. Resolve the model ID from CLI input, `ARGUSWIKI_MODEL_ID`, or the provider's default model.
-4. Create a run context from Git state and prior update metadata.
-5. Snapshot the current `openwiki/` content hash (before the run).
-6. Build the system prompt and user prompt.
-7. Create the provider-specific model client (`ChatAnthropic`, `ChatOpenRouter`, or `ChatOpenAI`).
-8. Create a DeepAgents `LocalShellBackend` rooted at the repository with a SQLite checkpointer.
-9. Stream messages and tool events back to the CLI.
-10. For `init` and `update`, compare the post-run content snapshot to the pre-run snapshot. Write `openwiki/.last-update.json` **only if the content changed**.
+2. Sync the bundled `skills/` directory into `~/.arguswiki/skills` (`syncBundledSkills()`, `src/agent/skills.ts`).
+3. For `update` runs without an explicit user message, check the update-noop condition (`getUpdateNoopStatus()`) and skip the run entirely if nothing changed since the last successful update.
+4. Resolve the provider via `resolveConfiguredProvider()` — purely for a debug log line; it always resolves to `"claude-cli"`, the only member of `ArgusWikiProvider`.
+5. Call `runClaudeCliAgent()` (`src/agent/claude-cli/claude-cli-backend.ts`). There is no other branch: every command, including `chat`, goes through this one function.
 
-Chat runs skip metadata writes entirely.
+`runClaudeCliAgent()` then:
 
-This sequence applies to every provider except `claude-cli`: when `ARGUSWIKI_PROVIDER=claude-cli`, `src/agent/index.ts` branches to `runClaudeCliAgent()` right after resolving the provider, skipping model creation and the DeepAgents backend entirely. See [Claude Code CLI provider](#claude-code-cli-provider) below.
+1. Rejects any `outputMode` other than `"repository"` (see [Claude Code CLI provider](#claude-code-cli-provider) below for what this breaks).
+2. Builds a `RunContext` (`createRunContext()`) and a pre-run content snapshot (`createArgusWikiContentSnapshot()`), both from `src/agent/utils.ts`.
+3. Builds the system/user prompt via `createClaudeCliSystemPrompt()`/`createClaudeCliUserPrompt()` (`src/agent/claude-cli/prompt.ts`).
+4. Writes a temporary Claude Code `--settings` file registering the `PreToolUse` write-guard hook, then spawns `claude` as a subprocess with `--output-format json --permission-mode acceptEdits`.
+5. On success, compares the post-run content snapshot to the pre-run one and writes `openwiki/.last-update.json` **only if the content changed** (`persistRunMetadataIfChanged()`).
 
-## Provider-specific model creation
-
-`createModel()` in `src/agent/index.ts` branches by provider:
-
-- **anthropic**: `new ChatAnthropic(modelId, { apiKey, anthropicApiUrl? })` — uses `@langchain/anthropic` directly. When `ANTHROPIC_BASE_URL` is set, the resolved alternative base URL is passed as `anthropicApiUrl` so requests can be routed to a self-hosted or proxied Anthropic-compatible endpoint instead of the default API.
-- **openai-chatgpt**: `new ChatOpenAI({ apiKey: tokens.access, model, useResponsesApi: true, zdrEnabled: true, streaming: true, configuration: { baseURL: CODEX_RESPONSES_BASE_URL, defaultHeaders, fetch } })` — uses ChatGPT OAuth tokens instead of an API key. Tokens are refreshed before model creation via `ensureFreshChatGptTokens()` in `src/agent/openai-chatgpt-oauth.ts`. The Codex backend requires `store: false` (`zdrEnabled`) and streaming for all requests. If tokens are missing, the run aborts with a clear message directing the user to sign in.
-- **openrouter**: `new ChatOpenRouter({ apiKey, baseURL, model, siteName: "ArgusWiki" })` — uses the selected OpenRouter model directly.
-- **openai**: `new ChatOpenAI({ apiKey, model, useResponsesApi: true })` — uses OpenAI's Responses API for official OpenAI calls.
-- **baseten / fireworks / openai-compatible**: `new ChatOpenAI({ apiKey, configuration: { baseURL? }, model })` — OpenAI-compatible clients using the provider's base URL when configured. The `openai-compatible` provider has no default endpoint; its base URL is user-supplied via `OPENAI_COMPATIBLE_BASE_URL` and required (`requiresBaseUrl: true`), which lets ArgusWiki target any OpenAI-compatible gateway (for example a LiteLLM gateway fronting upstream providers).
-
-Base URLs are resolved through `resolveProviderBaseUrl()` in `src/constants.ts`, which prefers a provider's alternative base URL environment variable (`baseUrlEnvKey`) over the built-in default before falling back to the SDK's own default endpoint. Providers marked `requiresBaseUrl` are validated at startup by `ensureProviderBaseUrl()`.
-
-Provider retry attempts are resolved through `resolveProviderRetryAttempts()` and passed to the LangChain model client's `maxRetries` option. The value is the number of retries after the first provider request; unset values default to 3 retries.
+Chat runs skip metadata writes because `persistRunMetadataIfChanged()` short-circuits on `command === "chat"`.
 
 ## Claude Code CLI provider
 
-`ARGUSWIKI_PROVIDER=claude-cli` runs an entirely separate path implemented in `src/agent/claude-cli/`, not a `createModel()` branch:
+`claude-cli` is not a special-cased branch alongside other providers anymore — it **is** the agent runtime, implemented entirely in `src/agent/claude-cli/`:
 
-- `claude-cli-backend.ts` (`runClaudeCliAgent()`) spawns the operator's already-authenticated `claude` CLI binary as a subprocess (`spawn("claude", [...])`) with `--output-format json`, `--permission-mode acceptEdits`, and a `--system-prompt`/user prompt built by the dedicated prompt module, reusing the same run-context, content-snapshot, and metadata bookkeeping (`persistRunMetadataIfChanged`) as the DeepAgents-based providers.
-- `prompt.ts` (`createClaudeCliSystemPrompt`/`createClaudeCliUserPrompt`) mirrors the product rules in `src/agent/prompt.ts` but targets the spawned CLI's own native tools (Read/Write/Edit/Bash/Grep/Glob) operating on real filesystem paths, not DeepAgents' virtual filesystem. It has no connector tools available.
-- Because this path bypasses `ArgusWikiLocalShellBackend` entirely, the docs-only write restriction is re-enforced out of band: a temporary `--settings` file registers a `PreToolUse` hook (`write-guard-hook.ts`) matching `Write|Edit` calls, backed by pure path-decision logic in `write-guard.ts` (`evaluateWritePath()`) that refuses writes outside the repository root or outside the configured `openwiki/`-relative directory.
-- It is keyless — there is no API key or OAuth step, so it is deliberately excluded from `SELECTABLE_ARGUSWIKI_PROVIDERS` and only reachable by explicitly setting `ARGUSWIKI_PROVIDER=claude-cli`. It requires the `claude` CLI to be installed and already authenticated in the run environment (for example a self-hosted CI runner under an operator's account).
-- v1 scope only supports `repository` output mode; passing `local-wiki` output mode throws.
+- `claude-cli-backend.ts` (`runClaudeCliAgent()`) spawns the operator's already-authenticated `claude` CLI binary as a subprocess (`spawn("claude", [...])`) with `--output-format json`, `--permission-mode acceptEdits`, and a `--system-prompt`/user prompt built by the dedicated prompt module, reusing the run-context, content-snapshot, and metadata bookkeeping (`src/agent/utils.ts`) that the removed multi-provider path used to share.
+- `prompt.ts` (`createClaudeCliSystemPrompt`/`createClaudeCliUserPrompt`) is a self-contained prompt builder targeting the spawned CLI's own native tools (Read/Write/Edit/Bash/Grep/Glob) operating on real filesystem paths. It does **not** import from `src/agent/prompt.ts` — that file (with its `local-wiki`/`repository` `OutputPromptConfig`, virtual-path instructions, and connector-ingestion prompt rules) is no longer wired into any run path; nothing outside itself calls its exports. Treat it as legacy/unused unless a source change proves otherwise. It has no connector tools available.
+- The docs-only write restriction is enforced out of band, not by a DeepAgents backend: a temporary `--settings` file registers a `PreToolUse` hook (`write-guard-hook.ts`) matching `Write|Edit` calls, backed by pure path-decision logic in `write-guard.ts` (`evaluateWritePath()`) that refuses writes outside the repository root or outside the configured `openwiki/`-relative directory.
+- It is keyless — there is no API key or OAuth step. It requires the `claude` CLI to be installed and already authenticated in the run environment (for example a self-hosted CI runner under an operator's account).
+- **v1 scope only supports `repository` output mode; passing `local-wiki` throws unconditionally**, before the command type is even checked. `openwiki personal --init/--update` (CLI mode `"personal"`) and the wiki-synthesis step of `openwiki ingest` both request `outputMode: "local-wiki"` (see `src/cli.tsx`'s `getRunModeOutputMode()` and `src/ingestion.ts`), so under this fork both currently error instead of running. Deterministic connector ingestion (writing raw JSON to `~/.arguswiki/connectors/<id>/raw/`) does not go through this path and is unaffected — only the wiki-synthesis step that follows it fails. See [Connectors](../integrations/connectors.md) and [Credentials and updates](../operations/credentials-and-updates.md) for what this affects.
 
 ## Prompting strategy
 
-`src/agent/prompt.ts` encodes the product rules directly into the system prompt. The agent is instructed to:
+`src/agent/claude-cli/prompt.ts` (`createClaudeCliSystemPrompt`) is the system prompt actually sent to the spawned `claude` CLI process — a compact, self-contained prompt, not the older `src/agent/prompt.ts`. The agent is instructed to:
 
 - inspect the current codebase and write documentation under `openwiki/`,
-- use filesystem discovery tools and git history rather than inventing facts,
-- keep the initial wiki focused and navigable,
-- avoid thin/slim pages — merge stubs into broader pages rather than creating many small directories,
+- use its native Read/Write/Edit/Bash/Grep/Glob tools and git history rather than inventing facts,
+- keep the initial wiki focused (at most ~8 pages on init) and navigable,
 - document the repository for both humans and future agents,
 - respect the repository root as the only project in scope,
 - avoid reading secrets or `.env` files,
 - use git history for init and update runs,
-- respect the temporary plan file and update metadata requirements,
-- ensure top-level `/AGENTS.md` and/or `/CLAUDE.md` reference the ArgusWiki quickstart (inserting or refreshing a standardized section).
+- create and delete a temporary `openwiki/_plan.md` file, and use OKF-compliant front matter on every page.
+
+It does **not** instruct the agent to update top-level `/AGENTS.md`/`/CLAUDE.md`, does not expose connector/subagent tooling, and does not include the OKF concept-relationship-graph or local-wiki-synthesis rules that `src/agent/prompt.ts` defines — those only apply on the unused multi-provider/local-wiki path (see [Claude Code CLI provider](#claude-code-cli-provider) above).
 
 The user prompt changes with the command:
 
@@ -73,7 +62,9 @@ The user prompt changes with the command:
 - `update` includes last update metadata and a Git change summary.
 - `chat` just forwards the user message.
 
-### Local brain open questions
+### Local brain open questions (unused path)
+
+The following "local brain" rules are defined in `src/agent/prompt.ts`, which is not wired into any active run path under this fork (see above) — they describe the intended personal/local-wiki design, not currently-reachable behavior. Kept here as design reference in case `local-wiki` output mode is restored.
 
 Local brain runs use `~/.arguswiki/wiki/open-questions.md` as a compact queue for uncertainty about the user's wiki or core memory model, not as a place to copy unresolved questions from every source document. Good open questions are things that would impair future assistance, such as unclear recurring routines, missing locations, uncertain preferences, ambiguous people/org relationships, or contradictions between sources.
 
@@ -124,39 +115,34 @@ That metadata is later used to scope update runs.
 
 ## Model errors
 
-The agent runtime uses only the selected provider and model for a run. Transient request failures use the LangChain model client's retry handling, configurable with `ARGUSWIKI_PROVIDER_RETRY_ATTEMPTS`. If the selected provider/model still fails, ArgusWiki surfaces the provider error and stops instead of retrying with another model.
+There is no LangChain model client and no cross-model retry anymore. If the spawned `claude` CLI process exits with a non-zero code and no stdout, or returns `is_error: true` in its JSON result, `runClaudeCliAgent()` throws and the run fails outright — ArgusWiki does not retry with another model. `ARGUSWIKI_PROVIDER_RETRY_ATTEMPTS` is still validated and stored by `src/env.ts`/`src/constants.ts` (`resolveProviderRetryAttempts()`), but nothing in the current run path reads it to configure retries; treat it as an inert legacy setting unless a source change proves otherwise.
 
 ## Why this matters
 
 The agent is not just a generic chat wrapper. It is intentionally constrained so it can:
 
 - write repository-local docs without wandering outside the repo,
-- preserve continuity across runs via checkpointing and metadata,
-- keep updates grounded in Git evidence,
+- keep updates grounded in Git evidence and scoped by `.last-update.json`,
 - avoid metadata churn via the content-snapshot check,
 - support both interactive and scheduled maintenance use cases.
 
 ## Things to watch when changing agent behavior
 
-- Keep the prompt in sync with the actual filesystem tools and path conventions used by the CLI.
+- Keep `src/agent/claude-cli/prompt.ts` in sync with the actual native tools and write-guard behavior of the spawned `claude` CLI — not `src/agent/prompt.ts`, which is unused.
 - Be careful with `.last-update.json` semantics, because update runs use it to decide what changed since the previous successful run.
 - The content-snapshot check means a no-op update will not update metadata. If you change the snapshot logic, ensure `.last-update.json` is still excluded.
-- Credential loading happens before model resolution; changes there affect both onboarding and agent startup.
-- When adding a provider, add a branch in `createModel()` and ensure the API key env key is checked in `ensureProviderKey()`. OAuth-based providers (like `openai-chatgpt`) skip `ensureProviderKey()` and instead require a token refresh step before `createModel()` is called.
-- The DeepAgents backend is configured with `virtualMode: true`, which is important for documentation-only behavior. The custom `ArgusWikiLocalShellBackend` in `src/agent/docs-only-backend.ts` adds docs-only write guards that restrict writes to the `openwiki/` directory in docs-only mode.
+- `local-wiki` output mode throws unconditionally in `runClaudeCliAgent()` — personal-mode runs and `openwiki ingest`'s synthesis step currently fail because of this. See [Claude Code CLI provider](#claude-code-cli-provider) above.
+- The write-guard hook (`write-guard-hook.ts`/`write-guard.ts`) is the *only* enforcement of the docs-only write restriction on this path — there is no DeepAgents backend restricting writes underneath it.
 
 ## Source map
 
 - `src/agent/index.ts`
-- `src/agent/prompt.ts`
 - `src/agent/utils.ts`
 - `src/agent/types.ts`
-- `src/agent/docs-only-backend.ts`
-- `src/agent/openai-chatgpt-oauth.ts`
+- `src/agent/skills.ts`
 - `src/agent/claude-cli/claude-cli-backend.ts`
 - `src/agent/claude-cli/prompt.ts`
 - `src/agent/claude-cli/write-guard.ts`
 - `src/agent/claude-cli/write-guard-hook.ts`
 - `src/constants.ts`
 - `src/env.ts`
-- Git evidence: commits `ceded10`, `f89b05d`, `dfa73cc`, `a82759f`, `0fa1430`, `070a382`, `5210cc4`
