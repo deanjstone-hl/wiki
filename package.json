@@ -2,11 +2,11 @@
   "name": "@argus/wiki",
   "version": "2.0.0",
   "description": "A CLI that uses a DeepAgents documentation agent to generate and maintain an ArgusWiki for a codebase.",
-  "license": "MIT",
   "type": "module",
   "engines": {
     "node": ">=22"
   },
+  "license": "MIT",
   "bin": {
     "arguswiki": "./dist/cli.js"
   },
