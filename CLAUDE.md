@@ -1,10 +1,10 @@
-# wiki (argus-context package)
+# wiki (argus package)
 
-Native fork of [langchain-ai/openwiki](https://github.com/langchain-ai/openwiki), now living as `packages/wiki` inside [`argus-context`](../../README.md) rather than its own repo. Previously `deanjstone/argus-wiki`; merged in via `git subtree` with full commit history preserved (`git log packages/wiki` from the repo root).
+Native fork of [langchain-ai/openwiki](https://github.com/langchain-ai/openwiki), now living as `apps/wiki` inside [`argus`](../../README.md) rather than its own repo. Previously `deanjstone/argus-wiki`, then `packages/wiki` in `deanjstone/argus-context` (archived); merged in via `git subtree` with full commit history preserved (`git log apps/wiki` from the repo root).
 
 ## Fork status
 
-This package carries no `upstream` remote in argus-context — it is a **hard fork with no live upstream tracking wired up here**. The hard-fork decision (never routinely merge from `langchain-ai/openwiki`, no obligation to track releases, no upstream contributions) was locked in while this was still the standalone `argus-wiki` repo; full rationale is preserved at [deanjstone/argus-wiki#15](https://github.com/deanjstone/argus-wiki/issues/15) (archived repo, history read-only). Any future upstream diff would be checked manually on GitHub and cherry-picked by hand — there is no `git subtree pull` path configured.
+This package carries no `upstream` remote in argus — it is a **hard fork with no live upstream tracking wired up here**. The hard-fork decision (never routinely merge from `langchain-ai/openwiki`, no obligation to track releases, no upstream contributions) was locked in while this was still the standalone `argus-wiki` repo; full rationale is preserved at [deanjstone/argus-wiki#15](https://github.com/deanjstone/argus-wiki/issues/15) (archived repo, history read-only). Any future upstream diff would be checked manually on GitHub and cherry-picked by hand — there is no `git subtree pull` path configured.
 
 MIT-licensed upstream code: see [`LICENSE`](LICENSE) and the attribution in [`README.md`](README.md).
 
