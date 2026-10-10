@@ -1,3 +1,10 @@
+# [@argus/wiki-v2.0.1](https://github.com/deanjstone/argus/compare/@argus/wiki-v2.0.0...@argus/wiki-v2.0.1) (2026-10-10)
+
+
+### Bug Fixes
+
+* **wiki:** raise vitest timeout for loaded CI runners ([#588](https://github.com/deanjstone/argus/issues/588)) ([#624](https://github.com/deanjstone/argus/issues/624)) ([cd2fc16](https://github.com/deanjstone/argus/commit/cd2fc167a345b55336144eb1aae97ef98a6679fc))
+
 # [@argus/wiki-v2.0.0](https://github.com/deanjstone/argus/compare/@argus/wiki-v1.0.1...@argus/wiki-v2.0.0) (2026-08-10)
 
 
