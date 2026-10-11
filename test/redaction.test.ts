@@ -221,7 +221,9 @@ describe("getErrorMessage", () => {
   });
 
   test("falls back to a generic message for non-Error values", () => {
-    expect(getErrorMessage("just a string")).toBe("ArgusWiki agent run failed.");
+    expect(getErrorMessage("just a string")).toBe(
+      "ArgusWiki agent run failed.",
+    );
   });
 
   test("redacts secrets in the underlying error message", () => {

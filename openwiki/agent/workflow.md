@@ -132,7 +132,7 @@ The agent is not just a generic chat wrapper. It is intentionally constrained so
 - Be careful with `.last-update.json` semantics, because update runs use it to decide what changed since the previous successful run.
 - The content-snapshot check means a no-op update will not update metadata. If you change the snapshot logic, ensure `.last-update.json` is still excluded.
 - `local-wiki` output mode throws unconditionally in `runClaudeCliAgent()` — personal-mode runs and `openwiki ingest`'s synthesis step currently fail because of this. See [Claude Code CLI provider](#claude-code-cli-provider) above.
-- The write-guard hook (`write-guard-hook.ts`/`write-guard.ts`) is the *only* enforcement of the docs-only write restriction on this path — there is no DeepAgents backend restricting writes underneath it.
+- The write-guard hook (`write-guard-hook.ts`/`write-guard.ts`) is the _only_ enforcement of the docs-only write restriction on this path — there is no DeepAgents backend restricting writes underneath it.
 
 ## Source map
 

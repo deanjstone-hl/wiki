@@ -139,7 +139,8 @@ describe("ensureCodeModeRepoSetup workflow", () => {
       "workflows",
       "arguswiki-update.yml",
     );
-    const customized = "name: Custom ArgusWiki Update\nruns-on: [self-hosted]\n";
+    const customized =
+      "name: Custom ArgusWiki Update\nruns-on: [self-hosted]\n";
     await mkdir(path.dirname(workflowPath), { recursive: true });
     await writeFile(workflowPath, customized, "utf8");
 

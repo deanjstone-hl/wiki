@@ -26,7 +26,9 @@ const CONNECTOR_ENV_KEYS = [
 const savedEnv: Record<string, string | undefined> = {};
 
 async function createTempHome(): Promise<string> {
-  const home = await mkdtemp(path.join(tmpdir(), "arguswiki-connector-config-"));
+  const home = await mkdtemp(
+    path.join(tmpdir(), "arguswiki-connector-config-"),
+  );
   tempHomes.push(home);
   return home;
 }

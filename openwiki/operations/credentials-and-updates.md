@@ -75,7 +75,7 @@ The setup flow runs for **all** interactive commands (chat, init, and update) wh
 
 ## First-run onboarding profile
 
-> **Personal/local-wiki mode currently errors at run time.** The rest of this section (templates, connector onboarding, `onboarding.json`, local schedules) describes machinery that still exists and still runs for *deterministic* connector ingestion, but the wiki-*synthesis* step — and all of `openwiki personal --init/--update` — goes through `runClaudeCliAgent()`, which unconditionally rejects `local-wiki` output mode. See [Agent workflow: Claude Code CLI provider](../agent/workflow.md#claude-code-cli-provider) and [CLI usage](../cli/usage.md#credentials-and-onboarding).
+> **Personal/local-wiki mode currently errors at run time.** The rest of this section (templates, connector onboarding, `onboarding.json`, local schedules) describes machinery that still exists and still runs for _deterministic_ connector ingestion, but the wiki-_synthesis_ step — and all of `openwiki personal --init/--update` — goes through `runClaudeCliAgent()`, which unconditionally rejects `local-wiki` output mode. See [Agent workflow: Claude Code CLI provider](../agent/workflow.md#claude-code-cli-provider) and [CLI usage](../cli/usage.md#credentials-and-onboarding).
 
 After model setup, first-run onboarding lets the user choose one of five wiki
 templates: Personal Work OS, AI Research Radar, Git Project Wiki, Social Media

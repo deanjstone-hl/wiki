@@ -293,7 +293,9 @@ export function getProviderSecretKeyEnvKey(
   return getProviderConfig(provider).secretKeyEnvKey;
 }
 
-export function providerRequiresSecretKey(provider: ArgusWikiProvider): boolean {
+export function providerRequiresSecretKey(
+  provider: ArgusWikiProvider,
+): boolean {
   return getProviderConfig(provider).secretKeyEnvKey !== undefined;
 }
 

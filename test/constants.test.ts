@@ -81,9 +81,9 @@ describe("normalizeProvider / isValidProvider", () => {
 
 describe("resolveConfiguredProvider", () => {
   test("honors an explicit ARGUSWIKI_PROVIDER", () => {
-    expect(resolveConfiguredProvider({ ARGUSWIKI_PROVIDER: "claude-cli" })).toBe(
-      "claude-cli",
-    );
+    expect(
+      resolveConfiguredProvider({ ARGUSWIKI_PROVIDER: "claude-cli" }),
+    ).toBe("claude-cli");
   });
 
   test("falls back to the default provider when nothing is configured", () => {

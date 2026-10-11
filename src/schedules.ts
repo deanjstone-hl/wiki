@@ -512,7 +512,9 @@ async function cancelArgusWikiPowerSchedule(): Promise<PowerScheduleInstallResul
   }
 }
 
-function hasActiveIngestionSchedule(config: ArgusWikiOnboardingConfig): boolean {
+function hasActiveIngestionSchedule(
+  config: ArgusWikiOnboardingConfig,
+): boolean {
   return Boolean(
     config.ingestionSchedule && !config.ingestionSchedule.pausedAt,
   );

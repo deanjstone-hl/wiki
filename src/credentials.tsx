@@ -572,7 +572,9 @@ export function InitSetup({
           onComplete({
             mode,
             modelId:
-              modelIdOverride ?? process.env[ARGUSWIKI_MODEL_ID_ENV_KEY] ?? null,
+              modelIdOverride ??
+              process.env[ARGUSWIKI_MODEL_ID_ENV_KEY] ??
+              null,
             onboardingCompleted: true,
             provider: initialProvider,
             runIngestionNow: false,
@@ -3492,7 +3494,9 @@ function getSourceOption(sourceId: ConnectorId): SourceSetupOption {
   );
 }
 
-function getConfigModeId(config: ArgusWikiOnboardingConfig): string | undefined {
+function getConfigModeId(
+  config: ArgusWikiOnboardingConfig,
+): string | undefined {
   return config.modeId ?? config.templateId;
 }
 

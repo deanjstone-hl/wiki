@@ -245,7 +245,9 @@ describe("getCredentialDiagnostics", () => {
   });
 
   test("flags an invalid model ID with a warning", async () => {
-    await env.saveArgusWikiEnv({ [ARGUSWIKI_MODEL_ID_ENV_KEY]: "bad model id" });
+    await env.saveArgusWikiEnv({
+      [ARGUSWIKI_MODEL_ID_ENV_KEY]: "bad model id",
+    });
 
     const diagnostics = await env.getCredentialDiagnostics();
     const entry = diagnostics.find(

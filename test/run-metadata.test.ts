@@ -33,7 +33,11 @@ describe("persistRunMetadataIfChanged", () => {
     );
 
     await mkdir(path.join(cwd, "arguswiki"), { recursive: true });
-    await writeFile(path.join(cwd, "arguswiki", "index.md"), "# Docs\n", "utf8");
+    await writeFile(
+      path.join(cwd, "arguswiki", "index.md"),
+      "# Docs\n",
+      "utf8",
+    );
 
     const written = await persistRunMetadataIfChanged(
       "init",
