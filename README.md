@@ -1,6 +1,6 @@
 # ArgusWiki
 
-> This package is a hard fork of [langchain-ai/openwiki](https://github.com/langchain-ai/openwiki), living at `apps/wiki` in [argus](../../README.md). It carries no live upstream tracking — see [`CLAUDE.md`](CLAUDE.md) for fork status and local divergences. All credit for the original design and implementation goes to the langchain-ai/openwiki authors; this fork does not contribute changes back upstream.
+> This package is a hard fork of [langchain-ai/openwiki](https://github.com/langchain-ai/openwiki), living in `deanjstone-hl/wiki` (split out of [`deanjstone/argus`](https://github.com/deanjstone/argus) `apps/wiki`, full history kept). It carries no live upstream tracking — see [`CLAUDE.md`](CLAUDE.md) for fork status and local divergences. All credit for the original design and implementation goes to the langchain-ai/openwiki authors; this fork does not contribute changes back upstream.
 
 ArgusWiki is a CLI that writes and maintains agent wikis for codebases or purpose memory. It's built specifically for agents, can ingest local knowledge sources through built-in connectors or git repositories and synthesize them into a local wiki.
 
