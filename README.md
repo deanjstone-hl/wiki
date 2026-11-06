@@ -353,6 +353,17 @@ The value must be a positive integer. If the value is unset, ArgusWiki defaults 
 
 If there's an inference provider or model you'd like to see added, please open a PR!
 
+## Releases and promotion
+
+A version is cut only when the owner promotes `main` to the `deploy` branch (the Approve on the ops-hub promotion card, a fast-forward of `deploy` to a SHA already on `main`). A merge to `main` never releases.
+
+Each push to `deploy` runs the **Release** workflow (`.github/workflows/release.yml`), two jobs in order:
+
+1. **Test before release (typecheck, lint, build, unit tests)** runs `scripts/ci.sh`, the same gate as the pull request CI, on the promoted commit.
+2. **Release** needs the test job, so a red test means no version. semantic-release tags one version and publishes the GitHub Release notes; it commits nothing back to `deploy`. A promotion made only of chore, docs, ci, test or refactor commits releases nothing.
+
+`workflow_dispatch` re-runs a failed release, and refuses any ref but `deploy`. Wiki is a CLI with no host install, so a promotion runs no deploy script.
+
 ## Contributing
 
 Contributions are welcome! Please read [CONTRIBUTING.md](./CONTRIBUTING.md) before opening a PR. We intentionally keep PRs tightly scoped to one change each, and PRs that bundle unrelated changes may be closed with a request to split them.
