@@ -1,15 +1,21 @@
 name: Release
 
 # A version is cut when the owner promotes, one per push to `deploy`, never by a merge to
-# `main` (argus-config#1048). A promotion made only of chore/docs/ci commits releases
-# nothing: semantic-release finds no releasable commit and exits 0.
+# `main` (argus-config#1048, pattern argus-config#1167). Two jobs, in order:
+#
+#   1. "Test before release (...)": the full test gate on the promoted SHA. The name lists
+#      what ran, so the Actions page and the hub card read as a sentence.
+#   2. "Release": `needs` the test job, so a red test means no version.
+#
+# A promotion made only of chore/docs/ci/test/refactor commits releases nothing:
+# semantic-release finds no releasable commit and exits 0.
 #
 # semantic-release only analyses, tags and publishes the GitHub Release (.releaserc.json).
 # It commits nothing back: `deploy` is fast-forwarded from `main`, so a commit made here
 # would fork the branches. The changelog is the GitHub Release notes.
 #
-# The workflow sits beside deploy.yml, not in it, so a failed deploy does not hide a
-# release and a failed release does not undo a deploy.
+# No `workflow_run` trigger: GitHub reports its branch as the default branch, and
+# semantic-release then silently dry-runs (design-system#190).
 on:
   push:
     branches: [deploy]
@@ -18,25 +24,29 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
-  issues: write
-  pull-requests: write
+  contents: read
 
 concurrency:
-  group: release-wiki
+  group: release
   cancel-in-progress: false
 
 jobs:
-  release:
-    name: Release
-    # A manual dispatch from main (or any other ref) would tag unpromoted code.
+  test:
+    name: Test before release (typecheck, lint, build, unit tests)
+    # A manual dispatch from main (or any other ref) would test and tag unpromoted code.
     if: github.ref == 'refs/heads/deploy'
     runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '"ubuntu-latest"') }}
     steps:
       - uses: actions/checkout@v7
         with:
-          fetch-depth: 0
+          ref: ${{ github.sha }}
           persist-credentials: false
+
+      # setup-node first, then pnpm: pnpm's self-installer shells out to whatever npm is
+      # on PATH, and the self-hosted runners' bundled npm shim is broken.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
 
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
         if: runner.environment == 'github-hosted'
@@ -45,10 +55,35 @@ jobs:
         if: runner.environment != 'github-hosted'
         uses: ./.github/actions/host-pnpm
 
+      # The same gate as the pull request CI (ci.yml), on the promoted commit.
+      - name: Test gate
+        run: scripts/ci.sh
+
+  release:
+    name: Release
+    needs: test
+    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '"ubuntu-latest"') }}
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
       - uses: actions/setup-node@v7
         with:
           node-version: 22
-          cache: ${{ runner.environment == 'github-hosted' && 'pnpm' || '' }}
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        if: runner.environment == 'github-hosted'
+
+      - name: Use the host pnpm (self-hosted)
+        if: runner.environment != 'github-hosted'
+        uses: ./.github/actions/host-pnpm
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
