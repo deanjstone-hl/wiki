@@ -1,6 +1,6 @@
 # wiki (argus package)
 
-Native fork of [langchain-ai/openwiki](https://github.com/langchain-ai/openwiki), now living as `apps/wiki` inside [`argus`](../../README.md) rather than its own repo. Previously `deanjstone/argus-wiki`, then `packages/wiki` in `deanjstone/argus-context` (archived); merged in via `git subtree` with full commit history preserved (`git log apps/wiki` from the repo root).
+Native fork of [langchain-ai/openwiki](https://github.com/langchain-ai/openwiki), now its own private repo, `deanjstone-hl/wiki`, split out of `apps/wiki` in [`deanjstone/argus`](https://github.com/deanjstone/argus) (argus#1070). Previously `deanjstone/argus-wiki`, then `packages/wiki` in `deanjstone/argus-context` (archived); merged in via `git subtree` with full commit history preserved (`git log` here shows the history that was `apps/wiki`).
 
 ## Fork status
 

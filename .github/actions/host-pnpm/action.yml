@@ -1,0 +1,22 @@
+name: Host pnpm
+description: >-
+  Use the pnpm already on a self-hosted runner's PATH (fnm's alias bin) instead of
+  reinstalling it with pnpm/action-setup, and fail if the version it runs is not
+  the one pinned by packageManager. Corepack (the homelab shim) and pnpm >= 9.7
+  both run the pinned version themselves, so this fails only when that is
+  switched off; see check.sh. Call it with
+  `if: runner.environment != 'github-hosted'`. Given a working-directory below the
+  repo root, it also fails unless that package's pin matches the root package.json pin.
+
+inputs:
+  working-directory:
+    description: Directory whose package.json holds the packageManager pin.
+    default: .
+
+runs:
+  using: composite
+  steps:
+    - name: Check pnpm against the packageManager pin
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: bash "$GITHUB_ACTION_PATH/check.sh"
