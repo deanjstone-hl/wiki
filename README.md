@@ -353,6 +353,10 @@ The value must be a positive integer. If the value is unset, ArgusWiki defaults 
 
 If there's an inference provider or model you'd like to see added, please open a PR!
 
+## Checks and pushing
+
+Trunk-based development: small conventional commits straight to `main`, no branch, no pull request. Before every push run `pnpm check` (it runs `scripts/ci.sh`: install, typecheck, lint, format, build, smoke test, unit tests, shell syntax), then `git pull --rebase`, then push. CI runs the same script on every push to `main`.
+
 ## Releases and promotion
 
 A version is cut only when the owner promotes `main` to the `deploy` branch (the Approve on the ops-hub promotion card, a fast-forward of `deploy` to a SHA already on `main`). A merge to `main` never releases.
@@ -360,7 +364,7 @@ A version is cut only when the owner promotes `main` to the `deploy` branch (the
 Each push to `deploy` runs the **Release** workflow (`.github/workflows/release.yml`), two jobs in order:
 
 1. **Test before release (typecheck, lint, build, unit tests)** runs `scripts/ci.sh`, the same gate as the pull request CI, on the promoted commit.
-2. **Release** needs the test job, so a red test means no version. semantic-release tags one version and publishes the GitHub Release notes; it commits nothing back to `deploy`. A promotion made only of chore, docs, ci, test or refactor commits releases nothing.
+2. **Release** needs the test job, so a red test means no version. semantic-release tags one version and publishes the GitHub Release notes (through `scripts/release-with-retry.sh`, which redoes a rejected tag push up to 3 times); it commits nothing back to `deploy`. A promotion made only of chore, docs, ci, test or refactor commits releases nothing.
 
 `workflow_dispatch` re-runs a failed release, and refuses any ref but `deploy`. Wiki is a CLI with no host install, so a promotion runs no deploy script.
 

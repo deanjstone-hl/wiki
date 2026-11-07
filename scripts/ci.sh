@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# The single definition of CI. .github/workflows/ci.yml calls it; run it locally before a PR.
+# The single definition of CI. .github/workflows/ci.yml calls it; run it locally (`pnpm check`) before every push to main.
 set -euo pipefail
 
 cd "$(git rev-parse --show-toplevel)"
@@ -33,4 +33,4 @@ step "Format" pnpm run format:check
 step "Build" pnpm run build
 step "Smoke test" env ARGUSWIKI_DEV=1 node dist/cli.js code --dry-run --init
 step "Test" pnpm run test
-step "Shell syntax" bash -n scripts/ci.sh .github/actions/host-pnpm/check.sh
+step "Shell syntax" bash -n scripts/ci.sh scripts/release-with-retry.sh .github/actions/host-pnpm/check.sh
