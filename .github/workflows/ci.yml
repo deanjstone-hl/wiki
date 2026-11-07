@@ -17,15 +17,6 @@ concurrency:
 
 jobs:
   build:
-    # Skip the push a PR squash-merge makes (committer web-flow, "(#N)" in the header,
-    # one commit): the PR run already ran this suite. Direct, forced and multi-commit
-    # pushes to main still run.
-    if: >-
-      github.event_name != 'push'
-      || github.event.forced
-      || github.event.head_commit.committer.username != 'web-flow'
-      || !contains(github.event.head_commit.message, '(#')
-      || contains(join(github.event.commits.*.id, ','), ',')
     name: Build
     # GitHub-hosted jobs are blocked (account billing), so the runner comes from the
     # CI_RUNS_ON repo variable: ["self-hosted","homelab"].
