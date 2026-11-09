@@ -366,6 +366,8 @@ Each push to `deploy` runs the **Release** workflow (`.github/workflows/release.
 1. **Test before release (typecheck, lint, build, unit tests)** runs `scripts/ci.sh`, the same gate as the pull request CI, on the promoted commit.
 2. **Release** needs the test job, so a red test means no version. semantic-release tags one version and publishes the GitHub Release notes (through `scripts/release-with-retry.sh`, which redoes a rejected tag push up to 3 times); it commits nothing back to `deploy`. A promotion made only of chore, docs, ci, test or refactor commits releases nothing.
 
+The release posts no comments on issues or pull requests (`successComment` and `failComment` are off in `.releaserc.json`): this repo's history is the split-out `apps/wiki` history, whose commit messages cite argus issue numbers that do not exist here, and the comment step fails the run on each one after the tag is already published (wiki#4). `test/release-config.test.ts` pins the setting.
+
 `workflow_dispatch` re-runs a failed release, and refuses any ref but `deploy`. Wiki is a CLI with no host install, so a promotion runs no deploy script.
 
 ## Contributing
