@@ -18,8 +18,8 @@ concurrency:
 jobs:
   build:
     name: Build
-    # GitHub-hosted jobs are blocked (account billing), so the runner comes from the
-    # CI_RUNS_ON repo variable: ["self-hosted","homelab"].
+    # Runs on GitHub-hosted ubuntu-latest unless the CI_RUNS_ON repo variable names
+    # another runner (a JSON label or list). Leave it unset on a public repo.
     runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '"ubuntu-latest"') }}
     steps:
       - uses: actions/checkout@v7
