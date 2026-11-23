@@ -2,7 +2,7 @@
 
 Three self-contained HTML/SVG diagrams for `wiki`: its architecture, its main flow, and its build and deploy path. Drawn in the house style of [argus-config/docs/diagrams](https://github.com/deanjstone/argus-config/tree/main/docs/diagrams) with the [diagram-design](https://github.com/cathrynlavery/diagram-design) Claude Code plugin checks (map [argus-config#1433](https://github.com/deanjstone/argus-config/issues/1433), task [context#453](https://github.com/deanjstone/context/issues/453)). Open the `.html` file in a browser.
 
-Each step node is a `<g id="step-<flow>-<step>">`, the deep-link contract of [ops-hub#13](https://github.com/deanjstone/ops-hub/issues/13): the hub links `#/diagrams/<repo>/<path>#<step-id>`, and the page highlights the targeted step (`:target`). Anything inferred is marked `[speculation]` in the diagram or its source line.
+Each step node is a `<g id="step-<flow>-<step>">`, the deep-link contract of [ops-hub#13](https://github.com/deanjstone-hl/ops-hub/issues/13): the hub links `#/diagrams/<repo>/<path>#<step-id>`, and the page highlights the targeted step (`:target`). Anything inferred is marked `[speculation]` in the diagram or its source line.
 
 | Diagram | Type | Flow | Step ids | Sources |
 |---|---|---|---|---|
