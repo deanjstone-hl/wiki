@@ -355,7 +355,7 @@ If there's an inference provider or model you'd like to see added, please open a
 
 ## Checks and pushing
 
-Trunk-based development: small conventional commits straight to `main`, no branch, no pull request. Before every push run `pnpm check` (it runs `scripts/ci.sh`: install, typecheck, lint, format, build, smoke test, unit tests, shell syntax), then `git pull --rebase`, then push. CI runs the same script on every push to `main`.
+Branch + PR: work on a branch off `origin/main` in your own worktree, push small conventional commits regularly, open a draft PR on the first push. Run `pnpm check` (it runs `scripts/ci.sh`: install, typecheck, lint, format, build, smoke test, unit tests, shell syntax) once before marking the PR ready. Rebase onto `origin/main` when it moves and push with `--force-with-lease` (own PR branch only). Merge with `gh pr merge --rebase --delete-branch` once every check on the head SHA is green. No direct pushes to `main`. CI runs the same script on every PR and every push to `main`.
 
 ## Releases and promotion
 
